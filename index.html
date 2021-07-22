@@ -123,7 +123,7 @@ function InitializeState()
 	
 	AllInfo = {
 		StateHistory: {
-			Time: 10,
+			Time: 0,
 			Resources: [200,200,100,200],		// Wood, Food, Gold, Stone
 			VilDistribution: {
 				Idle: 3,
@@ -138,11 +138,10 @@ function InitializeState()
 				StoneMiners: 0
 			}
 		},
-		Events: {
-		NextEventTime: 0,
-		EventID: "UserEvent"
-		},
-		Triggers: []
+		Events: [{
+		EventTime: 0,
+		EventFunction: ""
+		}]
 	};
 		
 
@@ -169,10 +168,13 @@ function BuildUnit(AllInfo,UnitName) {
 	AllInfo.StateHistory.Resources = subtractvector(AllInfo.StateHistory.Resources, UnitStatsTmp.Cost);
 	WriteOutResources(AllInfo);
 
-	// Add Trigger to Add Unit
-	AllInfo.Triggers[AllInfo.Triggers.length] = {TriggerTime: AllInfo.StateHistory.Time + UnitStatsTmp.TrainTime, TriggerFunction: "AddUnit(" + UnitName + ")"	};	
-	//document.getElementById("Output1").innerHTML =  AllInfo.Triggers[0].TriggerTime;
-	//document.getElementById("Output3").innerHTML =  AllInfo.Triggers.length;
+	// Add Event to Add Unit
+	// Determine where to add the event
+	// var IndexOfEvent = DetermineEventIndex(AllInfo,AllInfo.StateHistory.Time + UnitStatsTmp.TrainTime);
+	var IndexOfEvent = AllInfo.Events.length;
+	AllInfo.Events[IndexOfEvent] = {EventTime: AllInfo.StateHistory.Time + UnitStatsTmp.TrainTime, EventFunction: "AddUnit(" + UnitName + ")"	};	
+	document.getElementById("Output1").innerHTML =  AllInfo.Events[0].EventTime;
+	document.getElementById("Output3").innerHTML =  AllInfo.Events.length;
 	return AllInfo;
 }
 
@@ -182,7 +184,7 @@ function BuildSheepVil(AllInfo) {
 
 	AllInfo = BuildUnit(AllInfo,'Villager');
 	
-	// AddTrigger("IncreaseVillager(AllInfo)")
+	// AddEvent("IncreaseVillager(AllInfo)")
 	//SendIdleVilToSheep()
 	//WriteOutResources(AllInfo);
 

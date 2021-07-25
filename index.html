@@ -210,8 +210,9 @@ function InitializeState()
 			}
 		},
 		Events: [{
-		EventTime: 0,
-		EventFunction: "InitializeState();"
+			EventTime: 0,
+			EventFunction: "InitializeState();",
+			UserVisible: 1
 		}]
 	};
 		
@@ -250,6 +251,7 @@ function WriteOutVils(AoESim) {
 function AdvanceToNextEvent(AoESim) {
 
 	var NextEventTime = AoESim.Events[AoESim.State.CurEventIndex+1].EventTime;
+	var AnyEventVisible = 0;
 
 	for (let ii = AoESim.State.CurEventIndex+1; ii < AoESim.Events.length; ii++) {
 		// Run all events that have the same EventTime as the next one
@@ -274,7 +276,12 @@ function AdvanceToNextEvent(AoESim) {
 			
 			// Update Current Time & CurEventIndex
 			AoESim.State.Time = NextEventTime;
-			AoESim.State.CurEventIndex = ii;			
+			AoESim.State.CurEventIndex = ii;	
+			
+			if(AoESim.Events[ii].UserVisible === 1)
+			{
+				AnyEventVisible = 1;
+			}
 
 		}
 		else
@@ -285,13 +292,18 @@ function AdvanceToNextEvent(AoESim) {
 	}
 	WriteOutResources(AoESim);
 	WriteOutVils(AoESim);
-		
+
+	// Immediately proceed to next event, if all events should not be visible for user (e.g. an automatic retasking of Walker-vil --> Shepherd should not be visible for user)
+	if(AnyEventVisible === 0)
+	{
+		AdvanceToNextEvent(AoESim);
+	}
+	
 }
 
 
 function BuildUnit(AoESim,UnitName,UnitTask) {
 
-	//AoESim.State.Resources = AoESim.State.Resources - UnitStats(UnitName).Costs;
 	UnitStatsTmp = UnitStats(UnitName);
 	AoESim.State.Resources = subtractvector(AoESim.State.Resources, UnitStatsTmp.Cost);
 	WriteOutResources(AoESim);
@@ -299,8 +311,10 @@ function BuildUnit(AoESim,UnitName,UnitTask) {
 	// Add Event to Add Unit
 	// Determine where to add the event
 	// var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStatsTmp.TrainTime);
+	
+	// Events of AddUnit should always be visible for user, because this means some building is getting idle! 
 	var IndexOfEvent = AoESim.Events.length;
-	AoESim.Events[IndexOfEvent] = {EventTime: AoESim.State.Time + UnitStatsTmp.TrainTime, EventFunction: "AddUnit(AoESim, '" + UnitName + "', '" + UnitTask + "');"	};	
+	AoESim.Events[IndexOfEvent] = {EventTime: AoESim.State.Time + UnitStatsTmp.TrainTime, EventFunction: "AddUnit(AoESim, '" + UnitName + "', '" + UnitTask + "');", UserVisible: 1};	
 	return AoESim;
 }
 
@@ -319,7 +333,7 @@ function AddUnit(AoESim,UnitName,UnitTask) {
 function BuildSheepVil(AoESim) {
 	AoESim = BuildUnit(AoESim,'Villager','Walkers');
 	var IndexOfEvent = AoESim.Events.length;
-	AoESim.Events[IndexOfEvent] = {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToSheepherds, EventFunction: "RetaskVillager(AoESim,'Walkers','Shepherds');"	};	
+	AoESim.Events[IndexOfEvent] = {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToSheepherds, EventFunction: "RetaskVillager(AoESim,'Walkers','Shepherds');", UserVisible: 0	};	// Not necessary for user to see this event
 
 
 

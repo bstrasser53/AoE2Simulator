@@ -92,13 +92,13 @@
 <!--Build Icons-->
 
 <p id="TCs">TCs: &nbsp &nbsp  &nbsp  &nbsp &nbsp Barracks &nbsp &nbsp &nbsp Archeries &nbsp &nbsp &nbsp Stables &nbsp &nbsp &nbsp Monastaries &nbsp &nbsp &nbsp &nbsp Siege Workshops &nbsp &nbsp &nbsp Castles</p>
-<input type="image" src="./Pix/villager.png" onClick="javascript:BuildUnit(AllInfo,'Villager')" width="40" height="40" />
-<input type="image" src="./Pix/shepherd.png" onClick="javascript:BuildSheepVil(AllInfo)" width="40" height="40" />
+<input type="image" src="./Pix/villager.png" onClick="javascript:BuildUnit(AoESim,'Villager')" width="40" height="40" />
+<input type="image" src="./Pix/shepherd.png" onClick="javascript:BuildSheepVil(AoESim)" width="40" height="40" />
 <input type="image" src="./Pix/boar.webp" onClick="javascript:BuildBoarVil()" width="40" height="40" />
 <input type="image" src="./Pix/deer.png" onClick="javascript:BuildDeerVil()" width="40" height="40" />
 <input type="image" src="./Pix/tree.webp" onClick="javascript:BuildWoodVil()" width="40" height="40" />
 
-<input type="image" src="./Pix/ArrowRight.png" onClick="javascript:AdvanceToNextEvent(AllInfo)" width="40" height="40" />
+<input type="image" src="./Pix/ArrowRight.png" onClick="javascript:AdvanceToNextEvent(AoESim)" width="40" height="40" />
 
 <br>
 <!--<input type="image" src="./Pix/farmer.png" onClick="javascript:CalcGatherratesAndUpdateOutput()" width="40" height="40" />-->
@@ -159,13 +159,12 @@
 
 <script>
 
-// Rename AllInfo --> AoESim, StateHistory --> CurState
-var AllInfo;
+var AoESim;
 function InitializeState() 
 {
 	
-	AllInfo = {
-		StateHistory: {
+	AoESim = {
+		State: {
 			Time: 0,
 			CurEventIndex: 0,
 			Resources: [200,200,100,200],		// Wood, Food, Gold, Stone
@@ -217,69 +216,69 @@ function InitializeState()
 	};
 		
 
-	WriteOutResources(AllInfo);
-	WriteOutVils(AllInfo);
-	//return AllInfo;
+	WriteOutResources(AoESim);
+	WriteOutVils(AoESim);
+	//return AoESim;
 }
 
 
-function WriteOutResources(AllInfo) {
+function WriteOutResources(AoESim) {
 
-	document.getElementById("CurWoodNumber").innerHTML =  AllInfo.StateHistory.Resources[0];
-	document.getElementById("CurFoodNumber").innerHTML =  AllInfo.StateHistory.Resources[1];
-	document.getElementById("CurGoldNumber").innerHTML =  AllInfo.StateHistory.Resources[2];
-	document.getElementById("CurStoneNumber").innerHTML =  AllInfo.StateHistory.Resources[3];
+	document.getElementById("CurWoodNumber").innerHTML =  AoESim.State.Resources[0];
+	document.getElementById("CurFoodNumber").innerHTML =  AoESim.State.Resources[1];
+	document.getElementById("CurGoldNumber").innerHTML =  AoESim.State.Resources[2];
+	document.getElementById("CurStoneNumber").innerHTML =  AoESim.State.Resources[3];
 }
-function WriteOutVils(AllInfo) {
+function WriteOutVils(AoESim) {
 
-	document.getElementById("CurPop").innerHTML =  AllInfo.StateHistory.Pop;
-	document.getElementById("CurVils").innerHTML =  AllInfo.StateHistory.TotalVils;
-	document.getElementById("CurIdles").innerHTML =  AllInfo.StateHistory.Vils.Idles;
-	document.getElementById("CurBuilders").innerHTML =  AllInfo.StateHistory.Vils.Builders;
-	document.getElementById("CurWalkers").innerHTML =  AllInfo.StateHistory.Vils.Walkers;
-	document.getElementById("CurShepherds").innerHTML =  AllInfo.StateHistory.Vils.Shepherds;
-	document.getElementById("CurBoarHunters").innerHTML =  AllInfo.StateHistory.Vils.BoarHunters;
-	document.getElementById("CurDeerHunters").innerHTML =  AllInfo.StateHistory.Vils.DeerHunters;
-	document.getElementById("CurBerryPickers").innerHTML =  AllInfo.StateHistory.Vils.BerryPickers;
-	document.getElementById("CurFarmers").innerHTML =  AllInfo.StateHistory.Vils.Farmers;
-	document.getElementById("CurLumberjacks").innerHTML =  AllInfo.StateHistory.Vils.Lumberjacks;
-	document.getElementById("CurStragglerLumberjacks").innerHTML =  AllInfo.StateHistory.Vils.StragglerLumberjacks;
-	document.getElementById("CurGoldMiners").innerHTML =  AllInfo.StateHistory.Vils.GoldMiners;
-	document.getElementById("CurStoneMiners").innerHTML =  AllInfo.StateHistory.Vils.StoneMiners;
+	document.getElementById("CurPop").innerHTML =  AoESim.State.Pop;
+	document.getElementById("CurVils").innerHTML =  AoESim.State.TotalVils;
+	document.getElementById("CurIdles").innerHTML =  AoESim.State.Vils.Idles;
+	document.getElementById("CurBuilders").innerHTML =  AoESim.State.Vils.Builders;
+	document.getElementById("CurWalkers").innerHTML =  AoESim.State.Vils.Walkers;
+	document.getElementById("CurShepherds").innerHTML =  AoESim.State.Vils.Shepherds;
+	document.getElementById("CurBoarHunters").innerHTML =  AoESim.State.Vils.BoarHunters;
+	document.getElementById("CurDeerHunters").innerHTML =  AoESim.State.Vils.DeerHunters;
+	document.getElementById("CurBerryPickers").innerHTML =  AoESim.State.Vils.BerryPickers;
+	document.getElementById("CurFarmers").innerHTML =  AoESim.State.Vils.Farmers;
+	document.getElementById("CurLumberjacks").innerHTML =  AoESim.State.Vils.Lumberjacks;
+	document.getElementById("CurStragglerLumberjacks").innerHTML =  AoESim.State.Vils.StragglerLumberjacks;
+	document.getElementById("CurGoldMiners").innerHTML =  AoESim.State.Vils.GoldMiners;
+	document.getElementById("CurStoneMiners").innerHTML =  AoESim.State.Vils.StoneMiners;
 }
 
-function AdvanceToNextEvent(AllInfo) {
+function AdvanceToNextEvent(AoESim) {
 
-	var NextEventTime = AllInfo.Events[AllInfo.StateHistory.CurEventIndex+1].EventTime;
+	var NextEventTime = AoESim.Events[AoESim.State.CurEventIndex+1].EventTime;
 	document.getElementById("Output4").innerHTML =  NextEventTime;
-	document.getElementById("Output5").innerHTML =  AllInfo.StateHistory.CurEventIndex+1;	
-	document.getElementById("Output6").innerHTML =  AllInfo.Events.length;	
-	document.getElementById("Output3").innerHTML =  AllInfo.Events[AllInfo.StateHistory.CurEventIndex+1].EventFunction;	
+	document.getElementById("Output5").innerHTML =  AoESim.State.CurEventIndex+1;	
+	document.getElementById("Output6").innerHTML =  AoESim.Events.length;	
+	document.getElementById("Output3").innerHTML =  AoESim.Events[AoESim.State.CurEventIndex+1].EventFunction;	
 		
-	for (let ii = AllInfo.StateHistory.CurEventIndex+1; ii < AllInfo.Events.length; ii++) {
+	for (let ii = AoESim.State.CurEventIndex+1; ii < AoESim.Events.length; ii++) {
 		// Run all events that have the same EventTime as the next one
-		if(AllInfo.Events[ii].EventTime === NextEventTime)
+		if(AoESim.Events[ii].EventTime === NextEventTime)
 		{
 			// Run EventFunction
-			if(AllInfo.Events[ii].EventFunction != "")
+			if(AoESim.Events[ii].EventFunction != "")
 			{
-				eval(AllInfo.Events[ii].EventFunction);
+				eval(AoESim.Events[ii].EventFunction);
 			}
 			
 			// Gather Resources
-			var ElapsedTime = NextEventTime - AllInfo.StateHistory.Time;	
-			AllInfo.StateHistory.Resources[0] = AllInfo.StateHistory.Resources[0] + (AllInfo.StateHistory.Vils.Lumberjacks*AllInfo.StateHistory.GatherRates.Lumberjacks +
-												AllInfo.StateHistory.Vils.StragglerLumberjacks*AllInfo.StateHistory.GatherRates.StragglerLumberjacks) * ElapsedTime;
-			AllInfo.StateHistory.Resources[1] = AllInfo.StateHistory.Resources[1] + (AllInfo.StateHistory.Vils.Shepherds*AllInfo.StateHistory.GatherRates.Shepherds +
-												(AllInfo.StateHistory.Vils.DeerHunters+AllInfo.StateHistory.Vils.BoarHunters)*AllInfo.StateHistory.GatherRates.Hunters +
-												AllInfo.StateHistory.Vils.Farmers*AllInfo.StateHistory.GatherRates.Farmers + 
-												AllInfo.StateHistory.Vils.BerryPickers*AllInfo.StateHistory.GatherRates.BerryPickers) * ElapsedTime; 
-			AllInfo.StateHistory.Resources[2] = AllInfo.StateHistory.Vils.GoldMiners*AllInfo.StateHistory.GatherRates.GoldMiners * ElapsedTime;			
-			AllInfo.StateHistory.Resources[3] = AllInfo.StateHistory.Vils.StoneMiners*AllInfo.StateHistory.GatherRates.StoneMiners * ElapsedTime;						
+			var ElapsedTime = NextEventTime - AoESim.State.Time;	
+			AoESim.State.Resources[0] = AoESim.State.Resources[0] + (AoESim.State.Vils.Lumberjacks*AoESim.State.GatherRates.Lumberjacks +
+												AoESim.State.Vils.StragglerLumberjacks*AoESim.State.GatherRates.StragglerLumberjacks) * ElapsedTime;
+			AoESim.State.Resources[1] = AoESim.State.Resources[1] + (AoESim.State.Vils.Shepherds*AoESim.State.GatherRates.Shepherds +
+												(AoESim.State.Vils.DeerHunters+AoESim.State.Vils.BoarHunters)*AoESim.State.GatherRates.Hunters +
+												AoESim.State.Vils.Farmers*AoESim.State.GatherRates.Farmers + 
+												AoESim.State.Vils.BerryPickers*AoESim.State.GatherRates.BerryPickers) * ElapsedTime; 
+			AoESim.State.Resources[2] = AoESim.State.Vils.GoldMiners*AoESim.State.GatherRates.GoldMiners * ElapsedTime;			
+			AoESim.State.Resources[3] = AoESim.State.Vils.StoneMiners*AoESim.State.GatherRates.StoneMiners * ElapsedTime;						
 			
 			// Update Current Time & CurEventIndex
-			AllInfo.StateHistory.Time = NextEventTime;
-			AllInfo.StateHistory.CurEventIndex = ii;			
+			AoESim.State.Time = NextEventTime;
+			AoESim.State.CurEventIndex = ii;			
 
 		}
 		else
@@ -288,53 +287,53 @@ function AdvanceToNextEvent(AllInfo) {
 		}
 
 	}
-	WriteOutResources(AllInfo);
-	WriteOutVils(AllInfo);
+	WriteOutResources(AoESim);
+	WriteOutVils(AoESim);
 		
 }
 
 
-function BuildUnit(AllInfo,UnitName,UnitTask) {
+function BuildUnit(AoESim,UnitName,UnitTask) {
 
-	//AllInfo.StateHistory.Resources = AllInfo.StateHistory.Resources - UnitStats(UnitName).Costs;
+	//AoESim.State.Resources = AoESim.State.Resources - UnitStats(UnitName).Costs;
 	UnitStatsTmp = UnitStats(UnitName);
-	AllInfo.StateHistory.Resources = subtractvector(AllInfo.StateHistory.Resources, UnitStatsTmp.Cost);
-	WriteOutResources(AllInfo);
+	AoESim.State.Resources = subtractvector(AoESim.State.Resources, UnitStatsTmp.Cost);
+	WriteOutResources(AoESim);
 
 	// Add Event to Add Unit
 	// Determine where to add the event
-	// var IndexOfEvent = DetermineEventIndex(AllInfo,AllInfo.StateHistory.Time + UnitStatsTmp.TrainTime);
-	var IndexOfEvent = AllInfo.Events.length;
-	AllInfo.Events[IndexOfEvent] = {EventTime: AllInfo.StateHistory.Time + UnitStatsTmp.TrainTime, EventFunction: "AddUnit(AllInfo, '" + UnitName + "', '" + UnitTask + "');"	};	
-	document.getElementById("Output1").innerHTML =  AllInfo.Events[0].EventTime;
-	document.getElementById("Output2").innerHTML =  AllInfo.Events.length;
-	return AllInfo;
+	// var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStatsTmp.TrainTime);
+	var IndexOfEvent = AoESim.Events.length;
+	AoESim.Events[IndexOfEvent] = {EventTime: AoESim.State.Time + UnitStatsTmp.TrainTime, EventFunction: "AddUnit(AoESim, '" + UnitName + "', '" + UnitTask + "');"	};	
+	document.getElementById("Output1").innerHTML =  AoESim.Events[0].EventTime;
+	document.getElementById("Output2").innerHTML =  AoESim.Events.length;
+	return AoESim;
 }
 
 
-function AddUnit(AllInfo,UnitName,UnitTask) {
+function AddUnit(AoESim,UnitName,UnitTask) {
 
 	if(UnitName === "Villager")
 	{
-		AllInfo.StateHistory.TotalVils = AllInfo.StateHistory.TotalVils + 1;
-		AllInfo.StateHistory.Pop = AllInfo.StateHistory.Pop + 1;
-		AllInfo.StateHistory.Vils[UnitTask] = AllInfo.StateHistory.Vils[UnitTask] + 1;
-		WriteOutVils(AllInfo);
+		AoESim.State.TotalVils = AoESim.State.TotalVils + 1;
+		AoESim.State.Pop = AoESim.State.Pop + 1;
+		AoESim.State.Vils[UnitTask] = AoESim.State.Vils[UnitTask] + 1;
+		WriteOutVils(AoESim);
 	}
 }
 
-function BuildSheepVil(AllInfo) {
-	AllInfo = BuildUnit(AllInfo,'Villager','Walkers');
-	var IndexOfEvent = AllInfo.Events.length;
-	AllInfo.Events[IndexOfEvent] = {EventTime: AllInfo.StateHistory.Time + UnitStats("Villager").TrainTime + AllInfo.StateHistory.WalkTimes.IdleToSheepherds, EventFunction: "RetaskVillager(AllInfo,'Walkers','Shepherds');"	};	
+function BuildSheepVil(AoESim) {
+	AoESim = BuildUnit(AoESim,'Villager','Walkers');
+	var IndexOfEvent = AoESim.Events.length;
+	AoESim.Events[IndexOfEvent] = {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToSheepherds, EventFunction: "RetaskVillager(AoESim,'Walkers','Shepherds');"	};	
 
 
 
 }
-function RetaskVillager(AllInfo,RetaskFrom,RetaskTo) {
-	AllInfo.StateHistory.Vils[RetaskFrom] = AllInfo.StateHistory.Vils[RetaskFrom] - 1;
-	AllInfo.StateHistory.Vils[RetaskTo] = AllInfo.StateHistory.Vils[RetaskTo] + 1;
-	WriteOutVils(AllInfo);
+function RetaskVillager(AoESim,RetaskFrom,RetaskTo) {
+	AoESim.State.Vils[RetaskFrom] = AoESim.State.Vils[RetaskFrom] - 1;
+	AoESim.State.Vils[RetaskTo] = AoESim.State.Vils[RetaskTo] + 1;
+	WriteOutVils(AoESim);
 }
 
 

@@ -250,11 +250,7 @@ function WriteOutVils(AoESim) {
 function AdvanceToNextEvent(AoESim) {
 
 	var NextEventTime = AoESim.Events[AoESim.State.CurEventIndex+1].EventTime;
-	document.getElementById("Output4").innerHTML =  NextEventTime;
-	document.getElementById("Output5").innerHTML =  AoESim.State.CurEventIndex+1;	
-	document.getElementById("Output6").innerHTML =  AoESim.Events.length;	
-	document.getElementById("Output3").innerHTML =  AoESim.Events[AoESim.State.CurEventIndex+1].EventFunction;	
-		
+
 	for (let ii = AoESim.State.CurEventIndex+1; ii < AoESim.Events.length; ii++) {
 		// Run all events that have the same EventTime as the next one
 		if(AoESim.Events[ii].EventTime === NextEventTime)
@@ -305,8 +301,6 @@ function BuildUnit(AoESim,UnitName,UnitTask) {
 	// var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStatsTmp.TrainTime);
 	var IndexOfEvent = AoESim.Events.length;
 	AoESim.Events[IndexOfEvent] = {EventTime: AoESim.State.Time + UnitStatsTmp.TrainTime, EventFunction: "AddUnit(AoESim, '" + UnitName + "', '" + UnitTask + "');"	};	
-	document.getElementById("Output1").innerHTML =  AoESim.Events[0].EventTime;
-	document.getElementById("Output2").innerHTML =  AoESim.Events.length;
 	return AoESim;
 }
 

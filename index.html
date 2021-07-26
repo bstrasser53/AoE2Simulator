@@ -348,7 +348,7 @@ function BuildUnit(AoESim,UnitName,UnitTask) {
 	UnitStatsTmp = UnitStats(UnitName);
 	
 	// Only build unit if we have a building idle to build that unit
-	if(AoESim.State.Buildings[UnitStatsTmp.OccupyBuilding][1] > 0)
+	if(AoESim.State.Buildings[UnitStatsTmp.OccupyBuilding][1] > 0 && AoESim.State.Resources.AllElementsGreaterOrEqual(UnitStatsTmp.Cost))
 	{
 		AoESim.State.Resources = subtractvector(AoESim.State.Resources, UnitStatsTmp.Cost);
 		AoESim.State.Buildings[UnitStatsTmp.OccupyBuilding][1] = AoESim.State.Buildings[UnitStatsTmp.OccupyBuilding][1] - 1;
@@ -478,6 +478,71 @@ function addvector(a,b){
 function subtractvector(a,b){
     return a.map((e,i) => e - b[i]);
 }
+
+
+
+// attach the .ElementwiseEquals method to Array's prototype to call it on any array
+Array.prototype.ElementwiseEquals = function (array) {
+    // if the other array is a falsy value, return
+    if (!array)
+        return [0];
+
+    // compare lengths - can save a lot of time 
+    if (this.length != array.length)
+        return [0];
+	
+	var	Output = new Array(array.length) 
+    for (var ii = 0; ii < array.length; ii++) {
+		Output[ii] = this[ii] === array[ii];
+        }           
+    return Output;
+}
+// Hide method from for-in loops
+Object.defineProperty(Array.prototype, "ElementwiseEquals", {enumerable: false});
+
+// attach the .ElementwiseGreaterOrEqual method to Array's prototype to call it on any array
+Array.prototype.ElementwiseGreaterOrEqual = function (array) {
+    // if the other array is a falsy value, return
+    if (!array)
+        return [0];
+
+    // compare lengths - can save a lot of time 
+    if (this.length != array.length)
+        return [0];
+	
+	var	Output = new Array(array.length) 
+    for (var ii = 0; ii < array.length; ii++) {
+		Output[ii] = this[ii] >= array[ii];
+        }           
+    return Output;
+}
+// Hide method from for-in loops
+Object.defineProperty(Array.prototype, "ElementwiseGreaterOrEqual", {enumerable: false});
+
+
+// attach the .AllElementsGreaterOrEqual method to Array's prototype to call it on any array
+Array.prototype.AllElementsGreaterOrEqual = function (array) {
+    // if the other array is a falsy value, return
+    if (!array)
+        return false;
+
+    // compare lengths - can save a lot of time 
+    if (this.length != array.length)
+        return false;
+	
+	var	Output = true; 
+    for (var ii = 0; ii < array.length; ii++) {
+		if(this[ii] < array[ii])
+		{
+			Output = false;
+			return Output;
+		}
+    }           
+    return Output;
+}
+// Hide method from for-in loops
+Object.defineProperty(Array.prototype, "AllElementsGreaterOrEqual", {enumerable: false});
+
 
 
 </script>

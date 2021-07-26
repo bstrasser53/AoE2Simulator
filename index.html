@@ -207,6 +207,35 @@ function InitializeState()
 				IdleToGoldMiners: 20,
 				IdleToStoneMiners: 20,
 				Generic: 10
+			},
+			Buildings: { // If 2-element array, first index gives how man buildins exist, while second gives number of idle buildings. For farms and fishtraps, this shows unoccupied farms/traps
+				TownCenter: [1,1],
+				House: 0,
+				Mill: 0,
+				Farm: [0,0],
+				LumberCamp: 0,
+				MiningCamp: 0,
+				Dock: [0,0],
+				Barrack: [0,0],
+				Palisade: 0,
+				PalisadeGate: 0,
+				Outpost: 0,
+				Market: 0,
+				Blacksmith: [0,0],
+				FishTrap: [0,0],
+				ArcheryRange: [0,0],
+				Stable: [0,0],
+				StoneWall: 0,
+				Gate: 0,
+				WatchTower: 0,
+				Donjon: [0,0],
+				Monastery: [0,0],
+				University: [0,0],
+				SiegeWorkshop: [0,0],
+				Castle: [0,0],
+				Krepost: [0,0],
+				BombardTower: 0,
+				Feitoria: 0
 			}
 		},
 		Events: [{
@@ -317,20 +346,26 @@ function DetermineEventIndex(AoESim,EventTime){
 function BuildUnit(AoESim,UnitName,UnitTask) {
 
 	UnitStatsTmp = UnitStats(UnitName);
-	AoESim.State.Resources = subtractvector(AoESim.State.Resources, UnitStatsTmp.Cost);
-	WriteOutResources(AoESim);
+	
+	// Only build unit if we have a building idle to build that unit
+	if(AoESim.State.Buildings[UnitStatsTmp.OccupyBuilding][1] > 0)
+	{
+		AoESim.State.Resources = subtractvector(AoESim.State.Resources, UnitStatsTmp.Cost);
+		AoESim.State.Buildings[UnitStatsTmp.OccupyBuilding][1] = AoESim.State.Buildings[UnitStatsTmp.OccupyBuilding][1] - 1;
+		WriteOutResources(AoESim);
 
-	// Add Event to Add Unit
-	// Determine where to add the event
-	var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStatsTmp.TrainTime);
-	// Events of AddUnit should always be visible for user, because this means some building is getting idle! 
-	AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStatsTmp.TrainTime, EventFunction: "AddUnit(AoESim, '" + UnitName + "', '" + UnitTask + "');", UserVisible: 1});	
-	return AoESim;
+		// Add Event to Add Unit
+		// Determine where to add the event
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStatsTmp.TrainTime);
+		// Events of AddUnit should always be visible for user, because this means some building is getting idle! 
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStatsTmp.TrainTime, EventFunction: "AddUnit(AoESim, '" + UnitName + "', '" + UnitTask + "');", UserVisible: 1});	
+	}
 }
 
 
 function AddUnit(AoESim,UnitName,UnitTask) {
 
+	UnitStatsTmp = UnitStats(UnitName);
 	if(UnitName === "Villager")
 	{
 		AoESim.State.TotalVils = AoESim.State.TotalVils + 1;
@@ -338,21 +373,22 @@ function AddUnit(AoESim,UnitName,UnitTask) {
 		AoESim.State.Vils[UnitTask] = AoESim.State.Vils[UnitTask] + 1;
 		WriteOutVils(AoESim);
 	}
+	AoESim.State.Buildings[UnitStatsTmp.OccupyBuilding][1] = AoESim.State.Buildings[UnitStatsTmp.OccupyBuilding][1] + 1;
+	
 }
 
-function BuildSheepVil(AoESim) {
-	AoESim = BuildUnit(AoESim,'Villager','Walkers');
-	var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToShepherds);
-	AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToShepherds, EventFunction: "RetaskVillager(AoESim,'Walkers','Shepherds');", UserVisible: 0	});	// Not necessary for user to see this event
-
-
-
-}
 function RetaskVillager(AoESim,RetaskFrom,RetaskTo) {
 	AoESim.State.Vils[RetaskFrom] = AoESim.State.Vils[RetaskFrom] - 1;
 	AoESim.State.Vils[RetaskTo] = AoESim.State.Vils[RetaskTo] + 1;
 	WriteOutVils(AoESim);
 }
+
+function BuildSheepVil(AoESim) {
+	BuildUnit(AoESim,'Villager','Walkers');
+	var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToShepherds);
+	AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToShepherds, EventFunction: "RetaskVillager(AoESim,'Walkers','Shepherds');", UserVisible: 0	});	// Not necessary for user to see this event
+}
+
 
 
 /*

@@ -300,8 +300,8 @@ function AdvanceToNextEvent(AoESim) {
 												(AoESim.State.Vils.DeerHunters+AoESim.State.Vils.BoarHunters)*AoESim.State.GatherRates.Hunters +
 												AoESim.State.Vils.Farmers*AoESim.State.GatherRates.Farmers + 
 												AoESim.State.Vils.BerryPickers*AoESim.State.GatherRates.BerryPickers) * ElapsedTime; 
-			AoESim.State.Resources[2] = AoESim.State.Vils.GoldMiners*AoESim.State.GatherRates.GoldMiners * ElapsedTime;			
-			AoESim.State.Resources[3] = AoESim.State.Vils.StoneMiners*AoESim.State.GatherRates.StoneMiners * ElapsedTime;						
+			AoESim.State.Resources[2] = AoESim.State.Resources[2] + AoESim.State.Vils.GoldMiners*AoESim.State.GatherRates.GoldMiners * ElapsedTime;			
+			AoESim.State.Resources[3] = AoESim.State.Resources[3] + AoESim.State.Vils.StoneMiners*AoESim.State.GatherRates.StoneMiners * ElapsedTime;						
 			
 			// Update Current Time & CurEventIndex
 			AoESim.State.Time = NextEventTime;
@@ -359,7 +359,9 @@ function BuildUnit(AoESim,UnitName,UnitTask) {
 		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStatsTmp.TrainTime);
 		// Events of AddUnit should always be visible for user, because this means some building is getting idle! 
 		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStatsTmp.TrainTime, EventFunction: "AddUnit(AoESim, '" + UnitName + "', '" + UnitTask + "');", UserVisible: 1});	
+		return 0;
 	}
+	return 1;
 }
 
 
@@ -384,70 +386,77 @@ function RetaskVillager(AoESim,RetaskFrom,RetaskTo) {
 }
 
 function BuildSheepVil(AoESim) {
-	BuildUnit(AoESim,'Villager','Walkers');
-	var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToShepherds);
-	AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToShepherds, EventFunction: "RetaskVillager(AoESim,'Walkers','Shepherds');", UserVisible: 0	});	// Not necessary for user to see this event
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
+	if(ErrorOccurred === 0)
+	{	
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToShepherds);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToShepherds, EventFunction: "RetaskVillager(AoESim,'Walkers','Shepherds');", UserVisible: 0	});	// Not necessary for user to see this event
+	}
 }
 
 
 
-/*
+
 function BuildBoarVil() {
-
-	BuildUnit("Villager")
-	//SendIdleVilToBoar()
-
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
+	if(ErrorOccurred === 0)
+	{
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToHunters);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToHunters, EventFunction: "RetaskVillager(AoESim,'Walkers','BoarHunters');", UserVisible: 0	});	// Not necessary for user to see this event
+	}
 }
 
 function BuildDeerVil() {
-
-	BuildUnit("Villager")
-	//SendIdleVilToBoar()
-
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
+	if(ErrorOccurred === 0)
+	{
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToHunters);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToHunters, EventFunction: "RetaskVillager(AoESim,'Walkers','DeerHunters');", UserVisible: 0	});	// Not necessary for user to see this event
+	}
 }
 
 function BuildWoodVil() {
-
-	BuildUnit("Villager")
-	//SendIdleVilToBoar()
-
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
+	if(ErrorOccurred === 0)
+	{
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToLumberjacks);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToLumberjacks, EventFunction: "RetaskVillager(AoESim,'Walkers','Lumberjacks');", UserVisible: 0	});	// Not necessary for user to see this event
+	}
 }
 
 function BuildFarmVil() {
 
-	BuildUnit("Villager")
+	//BuildUnit("Villager")
 	//SendIdleVilToBoar()
 
 }
 
 function BuildGoldVil() {
-
-	BuildUnit("Villager")
-	//SendIdleVilToBoar()
-
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
+	if(ErrorOccurred === 0)
+	{
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToGoldMiners);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToGoldMiners, EventFunction: "RetaskVillager(AoESim,'Walkers','GoldMiners');", UserVisible: 0	});	// Not necessary for user to see this event
+	}
 }
 
 function BuildStoneVil() {
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
+	if(ErrorOccurred === 0)
+	{
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToStoneMiners);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToStoneMiners, EventFunction: "RetaskVillager(AoESim,'Walkers','StoneMiners');", UserVisible: 0	});	// Not necessary for user to see this event
+	}
+}
+
+/*
+function ResearchWheelbarrow() {
 
 	BuildUnit("Villager")
 	//SendIdleVilToBoar()
 
 }
-
-function BuildBoarVil() {
-
-	BuildUnit("Villager")
-	//SendIdleVilToBoar()
-
-}
-
-function BuildWheelbarrow() {
-
-	BuildUnit("Villager")
-	//SendIdleVilToBoar()
-
-}
-function BuildHandcart() {
+function ResearchHandcart() {
 
 	BuildUnit("Villager")
 	//SendIdleVilToBoar()

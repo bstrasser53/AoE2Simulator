@@ -196,16 +196,16 @@ function InitializeState()
 				
 			},
 			WalkTimes: {
-				IdleToBuilder: 15,
-				IdleToWalker: 0,
-				IdleToShepherds: 5,
-				IdleToHunters: 5,
-				IdleToBerries: 20,
-				IdleToFarmers: 10,
-				IdleToLumberjacks: 20,
-				IdleToStragglerLumberjacks: 10,
-				IdleToGoldMiners: 20,
-				IdleToStoneMiners: 20,
+				TCToBuilder: 15,
+				TCToWalker: 0,
+				TCToShepherds: 5,
+				TCToHunters: 5,
+				TCToBerries: 20,
+				TCToFarmers: 10,
+				TCToLumberjacks: 20,
+				TCToStragglerLumberjacks: 10,
+				TCToGoldMiners: 20,
+				TCToStoneMiners: 20,
 				Generic: 10
 			},
 			Buildings: { // If 2-element array, first index gives how man buildins exist, while second gives number of idle buildings. For farms and fishtraps, this shows unoccupied farms/traps
@@ -389,8 +389,8 @@ function BuildSheepVil(AoESim) {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
 	if(ErrorOccurred === 0)
 	{	
-		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToShepherds);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToShepherds, EventFunction: "RetaskVillager(AoESim,'Walkers','Shepherds');", UserVisible: 0	});	// Not necessary for user to see this event
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToShepherds);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToShepherds, EventFunction: "RetaskVillager(AoESim,'Walkers','Shepherds');", UserVisible: 0	});	// Not necessary for user to see this event
 	}
 }
 
@@ -401,8 +401,8 @@ function BuildBoarVil() {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
 	if(ErrorOccurred === 0)
 	{
-		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToHunters);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToHunters, EventFunction: "RetaskVillager(AoESim,'Walkers','BoarHunters');", UserVisible: 0	});	// Not necessary for user to see this event
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToHunters);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToHunters, EventFunction: "RetaskVillager(AoESim,'Walkers','BoarHunters');", UserVisible: 0	});	// Not necessary for user to see this event
 	}
 }
 
@@ -410,8 +410,8 @@ function BuildDeerVil() {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
 	if(ErrorOccurred === 0)
 	{
-		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToHunters);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToHunters, EventFunction: "RetaskVillager(AoESim,'Walkers','DeerHunters');", UserVisible: 0	});	// Not necessary for user to see this event
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToHunters);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToHunters, EventFunction: "RetaskVillager(AoESim,'Walkers','DeerHunters');", UserVisible: 0	});	// Not necessary for user to see this event
 	}
 }
 
@@ -419,8 +419,8 @@ function BuildWoodVil() {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
 	if(ErrorOccurred === 0)
 	{
-		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToLumberjacks);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToLumberjacks, EventFunction: "RetaskVillager(AoESim,'Walkers','Lumberjacks');", UserVisible: 0	});	// Not necessary for user to see this event
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToLumberjacks);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToLumberjacks, EventFunction: "RetaskVillager(AoESim,'Walkers','Lumberjacks');", UserVisible: 0	});	// Not necessary for user to see this event
 	}
 }
 
@@ -435,8 +435,8 @@ function BuildGoldVil() {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
 	if(ErrorOccurred === 0)
 	{
-		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToGoldMiners);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToGoldMiners, EventFunction: "RetaskVillager(AoESim,'Walkers','GoldMiners');", UserVisible: 0	});	// Not necessary for user to see this event
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToGoldMiners);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToGoldMiners, EventFunction: "RetaskVillager(AoESim,'Walkers','GoldMiners');", UserVisible: 0	});	// Not necessary for user to see this event
 	}
 }
 
@@ -444,8 +444,8 @@ function BuildStoneVil() {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
 	if(ErrorOccurred === 0)
 	{
-		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToStoneMiners);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.IdleToStoneMiners, EventFunction: "RetaskVillager(AoESim,'Walkers','StoneMiners');", UserVisible: 0	});	// Not necessary for user to see this event
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToStoneMiners);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToStoneMiners, EventFunction: "RetaskVillager(AoESim,'Walkers','StoneMiners');", UserVisible: 0	});	// Not necessary for user to see this event
 	}
 }
 

@@ -92,7 +92,7 @@
 <!--Build Icons-->
 
 <p id="TCs">TCs: &nbsp &nbsp  &nbsp  &nbsp &nbsp Barracks &nbsp &nbsp &nbsp Archeries &nbsp &nbsp &nbsp Stables &nbsp &nbsp &nbsp Monastaries &nbsp &nbsp &nbsp &nbsp Siege Workshops &nbsp &nbsp &nbsp Castles</p>
-<input type="image" src="./Pix/villager.png" onClick="javascript:BuildUnit(AoESim,'Villager')" width="40" height="40" />
+<input type="image" src="./Pix/villager.png" onClick="javascript:BuildUnit(AoESim,'Villager','Idles','./Pix/villager.png')" width="40" height="40" />
 <input type="image" src="./Pix/shepherd.png" onClick="javascript:BuildSheepVil(AoESim)" width="40" height="40" />
 <input type="image" src="./Pix/boar.webp" onClick="javascript:BuildBoarVil(AoESim)" width="40" height="40" />
 <input type="image" src="./Pix/deer.png" onClick="javascript:BuildDeerVil(AoESim)" width="40" height="40" />
@@ -109,6 +109,41 @@
 <input type="image" src="./Pix/hand_cart.png" onClick="javascript:ResearchHandcart(AoESim)" width="40" height="40" />
 
 
+
+
+<!--Event Bar-->
+<br>
+<br>
+<br>
+<br>
+
+
+<div id="EventBar" style="font-size:0">
+	<div id="EventBarLane0" style="font-size:0">
+	</div>
+	<br>
+	<div id="EventBarLane1" style="font-size:0">
+	</div>	
+	<br>
+	<div id="EventBarLane2" style="font-size:0">
+	</div>
+	<br>
+	<div id="EventBarLane3" style="font-size:0">
+	</div>
+	<br>
+	<div id="EventBarLane4" style="font-size:0">
+	</div>
+	<br>
+	<div id="EventBarLane5" style="font-size:0">
+	</div>
+	<br>
+	<div id="EventBarLane6" style="font-size:0">
+	</div>
+	<br>
+	<div id="EventBarLane7" style="font-size:0">
+	</div>
+<!--<img src="Pix/EmptyImage.jpg" onClick="javascript:MoveLineTo()" width="40" height="40">-->
+</div>
 
 
 <!--
@@ -237,6 +272,14 @@ function InitializeState()
 				Krepost: [0,0],
 				BombardTower: 0,
 				Feitoria: 0
+			},
+				EventBar: {
+					TotLanes: 8,
+					LanesOccupied: 0,
+					CurPos: 0,
+					Lanes: [{Occupied: 0, Img: "./Pix/EmptyImage.jpg"}, {Occupied: 0, Img: "./Pix/EmptyImage.jpg"}, {Occupied: 0, Img: "./Pix/EmptyImage.jpg"}, 
+							{Occupied: 0, Img: "./Pix/EmptyImage.jpg"}, {Occupied: 0, Img: "./Pix/EmptyImage.jpg"}, {Occupied: 0, Img: "./Pix/EmptyImage.jpg"},
+							{Occupied: 0, Img: "./Pix/EmptyImage.jpg"}, {Occupied: 0, Img: "./Pix/EmptyImage.jpg"}]
 			}
 		},
 		Events: [{
@@ -279,6 +322,48 @@ function WriteOutVils(AoESim) {
 	document.getElementById("CurGoldMiners").innerHTML =  AoESim.State.Vils.GoldMiners;
 	document.getElementById("CurStoneMiners").innerHTML =  AoESim.State.Vils.StoneMiners;
 }
+function AddImageToEventBar(AoESim,EventBarIcon,IconWidth) {
+
+	// Find out which lane to use
+	var UseLane;
+	for (let ii = 0; ii < AoESim.State.EventBar.TotLanes; ii++) {
+		if(AoESim.State.EventBar.Lanes[ii].Occupied === 0)
+		{
+			AoESim.State.EventBar.Lanes[ii].Occupied = 1;
+			AoESim.State.EventBar.Lanes[ii].Img = EventBarIcon;
+			UseLane = ii;
+			break;
+		}
+	}	
+	if (typeof UseLane === 'undefined') {
+		return -1;
+	}
+	
+	// Plot image
+	var img = document.createElement('img');
+	img.src = AoESim.State.EventBar.Lanes[UseLane].Img;
+	img.style.width = IconWidth + "px";
+	img.style.height = "25px";
+	document.getElementById("EventBarLane" + UseLane).appendChild(img);
+	
+	return UseLane;
+}
+function ReleaseEventBarLane(AoESim,ReleaseLane) {
+	AoESim.State.EventBar.Lanes[ReleaseLane].Occupied = 0;
+	AoESim.State.EventBar.Lanes[ReleaseLane].Img = './Pix/EmptyImage.jpg';
+}
+function FlushUnitBarLane(AoESim,FlushWidth) {
+	for (let ii = 0; ii < AoESim.State.EventBar.TotLanes; ii++) {
+		if(AoESim.State.EventBar.Lanes[ii].Occupied === 0){
+			var img = document.createElement('img');
+			img.src = AoESim.State.EventBar.Lanes[ii].Img;
+			img.style.width = FlushWidth + "px";
+			img.style.height = "25px";
+			document.getElementById("EventBarLane" + ii).appendChild(img);
+		}
+	}	
+}
+
 // Output Functions END
 
 
@@ -291,6 +376,8 @@ function AdvanceToNextEvent(AoESim) {
 	var ElapsedTime = NextEventTime - AoESim.State.Time;	
 	var AnyEventVisible = 0;
 
+	FlushUnitBarLane(AoESim,ElapsedTime);
+	
 	for (let ii = AoESim.State.CurEventIndex+1; ii < AoESim.Events.length; ii++) {
 		// Run all events that have the same EventTime as the next one
 		if(AoESim.Events[ii].EventTime === NextEventTime)
@@ -352,7 +439,9 @@ function DetermineEventIndex(AoESim,EventTime){
 	return EventIndex;
 }
 
-function BuildUnit(AoESim,UnitName,UnitTask) {
+
+
+function BuildUnit(AoESim,UnitName,UnitTask,EventBarIcon) {
 
 	UnitStatsTmp = UnitStats(UnitName);
 	
@@ -363,18 +452,23 @@ function BuildUnit(AoESim,UnitName,UnitTask) {
 		AoESim.State.Buildings[UnitStatsTmp.OccupyBuilding][1] = AoESim.State.Buildings[UnitStatsTmp.OccupyBuilding][1] - 1;
 		WriteOutResources(AoESim);
 
+		// Plot Unit to EventBar
+		var EventLane = AddImageToEventBar(AoESim,EventBarIcon,UnitStatsTmp.TrainTime);
+
 		// Add Event to Add Unit
 		// Determine where to add the event
 		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStatsTmp.TrainTime);
 		// Events of AddUnit should always be visible for user, because this means some building is getting idle! 
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStatsTmp.TrainTime, EventFunction: "AddUnit(AoESim, '" + UnitName + "', '" + UnitTask + "');", UserVisible: 1});	
-		return 0;
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStatsTmp.TrainTime, EventFunction: "AddUnit(AoESim, '" + UnitName + "', '" + UnitTask + "', " + EventLane + ");", UserVisible: 1});	
+		
+		return 0;	
 	}
 	return 1;
 }
 
 
-function AddUnit(AoESim,UnitName,UnitTask) {
+
+function AddUnit(AoESim,UnitName,UnitTask,EventLane) {
 
 	UnitStatsTmp = UnitStats(UnitName);
 	if(UnitName === "Villager")
@@ -387,6 +481,9 @@ function AddUnit(AoESim,UnitName,UnitTask) {
 	
 	// Release Building
 	AoESim.State.Buildings[UnitStatsTmp.OccupyBuilding][1] = AoESim.State.Buildings[UnitStatsTmp.OccupyBuilding][1] + 1;
+
+	// Release Event Lane	
+	ReleaseEventBarLane(AoESim,EventLane);
 	
 }
 
@@ -397,7 +494,7 @@ function RetaskVillager(AoESim,RetaskFrom,RetaskTo) {
 }
 
 function BuildSheepVil(AoESim) {
-	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/shepherd.png');
 	if(ErrorOccurred === 0)
 	{	
 		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToShepherds);
@@ -409,7 +506,7 @@ function BuildSheepVil(AoESim) {
 
 
 function BuildBoarVil(AoESim) {
-	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/boar.webp');
 	if(ErrorOccurred === 0)
 	{
 		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToHunters);
@@ -418,7 +515,7 @@ function BuildBoarVil(AoESim) {
 }
 
 function BuildDeerVil(AoESim) {
-	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/deer.png');
 	if(ErrorOccurred === 0)
 	{
 		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToHunters);
@@ -427,7 +524,7 @@ function BuildDeerVil(AoESim) {
 }
 
 function BuildWoodVil(AoESim) {
-	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/trees.jpeg');
 	if(ErrorOccurred === 0)
 	{
 		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToLumberjacks);
@@ -443,7 +540,7 @@ function BuildFarmVil(AoESim) {
 }
 
 function BuildGoldVil(AoESim) {
-	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/gold_miner.png');
 	if(ErrorOccurred === 0)
 	{
 		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToGoldMiners);
@@ -452,7 +549,7 @@ function BuildGoldVil(AoESim) {
 }
 
 function BuildStoneVil(AoESim) {
-	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/stone_miner.png');
 	if(ErrorOccurred === 0)
 	{
 		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToStoneMiners);

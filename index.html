@@ -94,18 +94,19 @@
 <p id="TCs">TCs: &nbsp &nbsp  &nbsp  &nbsp &nbsp Barracks &nbsp &nbsp &nbsp Archeries &nbsp &nbsp &nbsp Stables &nbsp &nbsp &nbsp Monastaries &nbsp &nbsp &nbsp &nbsp Siege Workshops &nbsp &nbsp &nbsp Castles</p>
 <input type="image" src="./Pix/villager.png" onClick="javascript:BuildUnit(AoESim,'Villager')" width="40" height="40" />
 <input type="image" src="./Pix/shepherd.png" onClick="javascript:BuildSheepVil(AoESim)" width="40" height="40" />
-<input type="image" src="./Pix/boar.webp" onClick="javascript:BuildBoarVil()" width="40" height="40" />
-<input type="image" src="./Pix/deer.png" onClick="javascript:BuildDeerVil()" width="40" height="40" />
-<input type="image" src="./Pix/tree.webp" onClick="javascript:BuildWoodVil()" width="40" height="40" />
-
+<input type="image" src="./Pix/boar.webp" onClick="javascript:BuildBoarVil(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/deer.png" onClick="javascript:BuildDeerVil(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/farmer.png" onClick="javascript:BuildFarmVil(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/Berries.webp" onClick="javascript:BuildBerryVil(AoESim)" width="40" height="40" />
 <input type="image" src="./Pix/ArrowRight.png" onClick="javascript:AdvanceToNextEvent(AoESim)" width="40" height="40" />
 
 <br>
-<!--<input type="image" src="./Pix/farmer.png" onClick="javascript:CalcGatherratesAndUpdateOutput()" width="40" height="40" />-->
-<!--<input type="image" src="./Pix/gold_miner.png" onClick="javascript:CalcGatherratesAndUpdateOutput()" width="40" height="40" />-->
-<!--<input type="image" src="./Pix/stone_miner.png" onClick="javascript:CalcGatherratesAndUpdateOutput()" width="40" height="40" />-->
-<!--<input type="image" src="./Pix/wheelbarrow.png" onClick="javascript:CalcGatherratesAndUpdateOutput()" width="40" height="40" />-->
-<!--<input type="image" src="./Pix/hand_cart.png" onClick="javascript:CalcGatherratesAndUpdateOutput()" width="40" height="40" />-->
+<input type="image" src="./Pix/trees.jpeg" onClick="javascript:BuildWoodVil(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/tree.jpeg" onClick="javascript:BuildStragglerWoodVil(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/gold_miner.png" onClick="javascript:BuildGoldVil(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/stone_miner.png" onClick="javascript:BuildStoneVil(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/wheelbarrow.png" onClick="javascript:ResearchWheelbarrow(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/hand_cart.png" onClick="javascript:ResearchHandcart(AoESim)" width="40" height="40" />
 
 
 
@@ -252,6 +253,8 @@ function InitializeState()
 }
 
 
+
+// Output Functions
 function WriteOutResources(AoESim) {
 
 	document.getElementById("CurWoodNumber").innerHTML =  AoESim.State.Resources[0];
@@ -276,10 +279,16 @@ function WriteOutVils(AoESim) {
 	document.getElementById("CurGoldMiners").innerHTML =  AoESim.State.Vils.GoldMiners;
 	document.getElementById("CurStoneMiners").innerHTML =  AoESim.State.Vils.StoneMiners;
 }
+// Output Functions END
+
+
+
+
 
 function AdvanceToNextEvent(AoESim) {
 
 	var NextEventTime = AoESim.Events[AoESim.State.CurEventIndex+1].EventTime;
+	var ElapsedTime = NextEventTime - AoESim.State.Time;	
 	var AnyEventVisible = 0;
 
 	for (let ii = AoESim.State.CurEventIndex+1; ii < AoESim.Events.length; ii++) {
@@ -293,7 +302,7 @@ function AdvanceToNextEvent(AoESim) {
 			}
 			
 			// Gather Resources
-			var ElapsedTime = NextEventTime - AoESim.State.Time;	
+			ElapsedTime = NextEventTime - AoESim.State.Time;	
 			AoESim.State.Resources[0] = AoESim.State.Resources[0] + (AoESim.State.Vils.Lumberjacks*AoESim.State.GatherRates.Lumberjacks +
 												AoESim.State.Vils.StragglerLumberjacks*AoESim.State.GatherRates.StragglerLumberjacks) * ElapsedTime;
 			AoESim.State.Resources[1] = AoESim.State.Resources[1] + (AoESim.State.Vils.Shepherds*AoESim.State.GatherRates.Shepherds +
@@ -375,6 +384,8 @@ function AddUnit(AoESim,UnitName,UnitTask) {
 		AoESim.State.Vils[UnitTask] = AoESim.State.Vils[UnitTask] + 1;
 		WriteOutVils(AoESim);
 	}
+	
+	// Release Building
 	AoESim.State.Buildings[UnitStatsTmp.OccupyBuilding][1] = AoESim.State.Buildings[UnitStatsTmp.OccupyBuilding][1] + 1;
 	
 }
@@ -397,7 +408,7 @@ function BuildSheepVil(AoESim) {
 
 
 
-function BuildBoarVil() {
+function BuildBoarVil(AoESim) {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
 	if(ErrorOccurred === 0)
 	{
@@ -406,7 +417,7 @@ function BuildBoarVil() {
 	}
 }
 
-function BuildDeerVil() {
+function BuildDeerVil(AoESim) {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
 	if(ErrorOccurred === 0)
 	{
@@ -415,7 +426,7 @@ function BuildDeerVil() {
 	}
 }
 
-function BuildWoodVil() {
+function BuildWoodVil(AoESim) {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
 	if(ErrorOccurred === 0)
 	{
@@ -424,14 +435,14 @@ function BuildWoodVil() {
 	}
 }
 
-function BuildFarmVil() {
+function BuildFarmVil(AoESim) {
 
 	//BuildUnit("Villager")
 	//SendIdleVilToBoar()
 
 }
 
-function BuildGoldVil() {
+function BuildGoldVil(AoESim) {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
 	if(ErrorOccurred === 0)
 	{
@@ -440,7 +451,7 @@ function BuildGoldVil() {
 	}
 }
 
-function BuildStoneVil() {
+function BuildStoneVil(AoESim) {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers');
 	if(ErrorOccurred === 0)
 	{

@@ -3,6 +3,7 @@
 
 <head>
   <title>AoE Simulator</title>
+  <script src="sheetjs-master/dist/xlsx.full.min.js"></script>
 	<meta charset="UTF-8">
 	<meta name="description" content="Simulator for Age of Empires 2">
 	<meta name="keywords" content="AoE2, Age of Empires 2, AoE Tools, AoE Simulator">
@@ -31,8 +32,7 @@
 	<option value="Mayans">Mayans</option>
 	<option value="Burgundians">Burgundians</option>
 	<option value="Portuguese">Portuguese</option> -->
-</select>
-<br>
+</select> Choose Stats-file: <input name="Statfile" id="Statfile"  class="left" style="width: 300px;" type="file">
 <br>
 <br>
 
@@ -181,7 +181,7 @@
 <p id="Output3"></p>
 <p id="Output4"></p>
 <p id="Output5"></p>
-<p id="Output6"></p>
+
 
 
 <!-- DEBUG: -->
@@ -198,7 +198,7 @@
 var AoESim;
 function InitializeState() 
 {
-	
+	//ReadExcel();
 	AoESim = {
 		State: {
 			Time: 0,
@@ -286,9 +286,15 @@ function InitializeState()
 			EventTime: 0,
 			EventFunction: "InitializeState();",
 			UserVisible: 1
-		}]
+		}],
+		Stats: {
+			Buildings: {},
+			Units: {},
+			Upgrades: {}
+		}
 	};
 		
+
 
 	WriteOutResources(AoESim);
 	WriteOutVils(AoESim);
@@ -585,8 +591,31 @@ function UnitStats(UnitName) {
 		Stats.TrainTime = 25;
 	}
 	return Stats;
-
 }
+
+
+// Read in Excel File with Stats Infos (Costs of units, buildings, upgrades etc.
+var input_dom_element = document.getElementById('Statfile');
+var rABS = true; // true: readAsBinaryString ; false: readAsArrayBuffer
+function handleFile(e) {
+	var files = e.target.files, f = files[0];
+	var reader = new FileReader();
+	reader.onload = function(e) {
+		var data = e.target.result;
+		if(!rABS) data = new Uint8Array(data);
+		var workbook = XLSX.read(data, {type: rABS ? 'binary' : 'array'});
+		var ws = workbook.Sheets[workbook.SheetNames[0]];
+		AoESim.Stats.Buildings = XLSX.utils.sheet_to_json(ws, {header:1});
+		ws = workbook.Sheets[workbook.SheetNames[1]];
+		AoESim.Stats.Upgrades = XLSX.utils.sheet_to_json(ws, {header:1});
+		ws = workbook.Sheets[workbook.SheetNames[2]];
+		AoESim.Stats.Units = XLSX.utils.sheet_to_json(ws, {header:1});
+	};
+	if(rABS) reader.readAsBinaryString(f); else reader.readAsArrayBuffer(f);
+}
+input_dom_element.addEventListener('change', handleFile, false);
+
+
 
 
 function addvector(a,b){
@@ -662,7 +691,11 @@ Object.defineProperty(Array.prototype, "AllElementsGreaterOrEqual", {enumerable:
 
 
 
+
+
 </script>
+
+
 
 
 </body>

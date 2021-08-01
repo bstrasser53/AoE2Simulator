@@ -34,6 +34,29 @@
 	<option value="Portuguese">Portuguese</option> -->
 </select> Choose Stats-file: <input name="Statfile" id="Statfile"  class="left" style="width: 300px;" type="file">
 <br>
+<label for="lBuildBuilding">Build Building?</label>
+<select name="sBuildBuilding" id="sBuildBuilding">
+</select>
+
+<label for="lBuilders1">UseVils1:</label>
+<select name="sBuilders1" id="sBuilders1">
+</select>
+<label for="lBuilders1Number">Amount:</label>
+<input type="number" value="0" id="lBuilders1Number" name="lBuilders1Number" required minlength="1" maxlength="2" size="1">
+
+<label for="lBuilders2">UseVils2:</label>
+<select name="sBuilders2" id="sBuilders2">
+</select>
+<label for="lBuilders2Number">Amount:</label>
+<input type="number" value="0" id="lBuilders2Number" name="lBuilders2Number" required minlength="1" maxlength="2" size="1">
+
+<label for="lBuilders3">UseVils3:</label>
+<select name="sBuilders3" id="sBuilders3">
+</select>
+<label for="lBuilders3Number">Amount:</label>
+<input type="number" value="0" id="lBuilders3Number" name="lBuilders3Number" required minlength="1" maxlength="2" size="1">
+<button type="button" onclick="BuildBuilding(AoESim)">Build!</button>
+<br>
 <br>
 
 
@@ -304,7 +327,7 @@ function InitializeState()
 		
 	WriteOutResources(AoESim);
 	WriteOutVils(AoESim);
-	//return AoESim;
+	UpdateBuilderUI(AoESim);
 }
 
 
@@ -380,6 +403,65 @@ function FlushUnitBarLane(AoESim,FlushWidth) {
 
 
 
+// UI Functions
+function UpdateBuildingOptions(AoESim) {
+    select = document.getElementById('sBuildBuilding');
+	
+	// Remove all building options
+	while (select.firstChild) {
+		select.removeChild(select.firstChild);
+	}	
+	
+	// Add all currently available buildings
+	for (var propp in AoESim.Stats.Buildings) {
+		if(AoESim.State.Buildings[propp][2] > 0)
+		{
+			var opt = document.createElement('option');
+			opt.value = propp;
+			opt.innerHTML = propp;
+			select.appendChild(opt);
+		}
+	}
+}
+function UpdateBuilderUI(AoESim) {
+	// Show only options to use villagers as builders that are available
+    select1 = document.getElementById('sBuilders1');
+    select2 = document.getElementById('sBuilders2');
+    select3 = document.getElementById('sBuilders3');
+    
+    // Remove all previous options
+	while (select1.firstChild) {
+		select1.removeChild(select1.firstChild);
+	}
+	while (select2.firstChild) {
+		select2.removeChild(select2.firstChild);
+	}	
+	while (select3.firstChild) {
+		select3.removeChild(select3.firstChild);
+	}	
+	
+	// Add new options
+	for (var propp in AoESim.State.Vils) {
+		if(AoESim.State.Vils[propp] > 0)
+		{
+			var opt1 = document.createElement('option');
+			opt1.value = propp;
+			opt1.innerHTML = propp;
+			select1.appendChild(opt1);
+			
+			var opt2 = document.createElement('option');
+			opt2.value = propp;
+			opt2.innerHTML = propp;			
+			select2.appendChild(opt2);
+			
+			var opt3 = document.createElement('option');
+			opt3.value = propp;
+			opt3.innerHTML = propp;				
+			select3.appendChild(opt3);
+		}
+	}
+}
+// UI Functions END
 
 
 // Time, Events & Timing Functions
@@ -436,6 +518,10 @@ function AdvanceInTime(AoESim) {
 	{
 		AdvanceInTime(AoESim);
 	}
+	else
+	{
+		UpdateBuilderUI(AoESim);
+	}
 	
 }
 
@@ -451,7 +537,26 @@ function DetermineEventIndex(AoESim,EventTime){
 	}
 	return EventIndex;
 }
+
+function CalcWalkTime(RetaskFrom,RetaskTo,BuildingName) {
+
+	if((RetaskFrom === "Idles" || RetaskFrom === "Builders") && RetaskTo == "Builders")
+	{
+		return 1;
+	}
+	if(BuildingName === "House")
+	{
+		return 5;
+	}
+	
+	
+	// Generic walktime:
+	return 10;
+	
+}
 // Time, Events & Timing Functions END
+
+
 
 
 // Build, Research & Add Functions
@@ -505,6 +610,113 @@ function AddUnit(AoESim,UnitName,UnitTask,EventLane) {
 	ReleaseEventBarLane(AoESim,EventLane);
 	
 }
+
+
+
+function BuildBuilding(AoESim) {
+
+	var BuildingName = document.getElementById("sBuildBuilding").value;
+	BuildingStatsTmp = AoESim.Stats.Buildings[BuildingName];
+	
+	// Return error if we cannot afford building. Don't build it in that case!
+	if(!AoESim.State.Resources.AllElementsGreaterOrEqual(BuildingStatsTmp.Cost))
+	{
+		return 1;
+	}
+	
+	// Further check if assigning builder-vils would cause negative vil-distribution. Also dont build it in that case!
+	// Get Builders-Info
+	var Builders1 = document.getElementById("sBuilders1").value;
+	var Builders1No = parseFloat(document.getElementById("lBuilders1Number").value);
+	var Builders2 = document.getElementById("sBuilders2").value;
+	var Builders2No = parseFloat(document.getElementById("lBuilders2Number").value);
+	var Builders3 = document.getElementById("sBuilders3").value;
+	var Builders3No = parseFloat(document.getElementById("lBuilders3Number").value);
+	
+	// Calculate what would happen if we subtracted the builders from their current work
+	var TmpVils = AoESim.State.Vils;
+	TmpVils[Builders1] = TmpVils[Builders1] - Builders1No;
+	TmpVils[Builders2] = TmpVils[Builders2] - Builders2No;
+	TmpVils[Builders3] = TmpVils[Builders3] - Builders3No;	
+	
+	// Check if we would get negative vil distribution. Don't build building in that case either!
+	if(TmpVils[Builders1] < 0 || TmpVils[Builders2] < 0 || TmpVils[Builders3] < 0)
+	{
+		return 1;
+	}
+
+	// Otherwise: Build building!
+	var TotBuilders = Builders1No+Builders2No+Builders3No;
+	AoESim.State.Resources = subtractvector(AoESim.State.Resources, BuildingStatsTmp.Cost);
+	AoESim.State.Vils = TmpVils;
+	AoESim.State.Vils.Walkers = AoESim.State.Vils.Walkers + Builders1No + Builders2No + Builders3No;
+	WriteOutResources(AoESim);
+	WriteOutVils(AoESim);	
+
+	// Calc timings
+	
+	// Walk Time
+	// Quirk: It would be too complicated to have different vils arrive at different times to start building. E.g. if we build a castle with 8 vils, and 3 are farmers, and 5 stone miners
+	// and the stone miners arrive earlier than the farmers. Instead, use same walk time for all of them!
+	var WalkTime = CalcWalkTime(Builders1,"Builders",BuildingName);
+	
+	// Build Time
+	var BuildTime = 3*BuildingStatsTmp.CreateTime/(2+TotBuilders);
+
+	// Plot Building to EventBar
+	// Remark: Could either set an event to plot Icon when it's really started (after walk-time), or just include the walk-time in the building time when plotting it. I opted for the 2nd option
+	// So the icons will be stretched to include the walk-time.
+	var EventLane = AddImageToEventBar(AoESim,"./Pix/House.webp",WalkTime+BuildTime);
+
+
+	// Add Events to 
+	// 1) Retask vils from walkers --> builders 
+	var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + WalkTime);	
+	AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + WalkTime, EventFunction: "RetaskVillager(AoESim,'Walkers','Builders'," + TotBuilders + ");", UserVisible: 0});
+	
+	// 2) Add building
+	var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + WalkTime + BuildTime);	
+	AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + WalkTime + BuildTime, EventFunction: "AddBuilding(AoESim, '" + BuildingName + "', " + TotBuilders + ", " + EventLane + ");", UserVisible: 1});	
+
+
+}
+
+function AddBuilding(AoESim,BuildingName,TotBuilders,EventLane) {
+
+	// Add Building
+	AoESim.State.Buildings[BuildingName][0] = AoESim.State.Buildings[BuildingName][0] + 1;
+	AoESim.State.Buildings[BuildingName][1] = AoESim.State.Buildings[BuildingName][1] + 1;
+	
+	// Does the building enable another building? If so, enable the new building!
+	var NeedBuildingsUpdate = 0;
+	for (var propp in AoESim.Stats.Buildings) {
+		if(AoESim.Stats.Buildings[propp].Prerequisites === BuildingName && AoESim.State.Buildings[propp][2] === 0 && AoESim.State.CurAge >= AoESim.Stats.Buildings[propp].AvailableAge)
+		{
+			AoESim.State.Buildings[propp][2] = 1;
+			NeedBuildingsUpdate = 1;
+		}
+	}
+	if(NeedBuildingsUpdate === 1)
+	{
+		UpdateBuildingOptions(AoESim);
+	}
+	
+	// Apply Effect of Building
+	if(AoESim.Stats.Buildings[BuildingName].Effects != " ")
+	{
+		eval(AoESim.Stats.Buildings[BuildingName].Effects);
+	}
+	
+	// Release Builders
+	RetaskVillager(AoESim,'Builders','Idles', TotBuilders);
+
+	// Release Event Lane	
+	ReleaseEventBarLane(AoESim,EventLane);
+	
+	
+}
+
+
 
 function RetaskVillager(AoESim,RetaskFrom,RetaskTo,NoOfVils) {
 	AoESim.State.Vils[RetaskFrom] = AoESim.State.Vils[RetaskFrom] - NoOfVils;
@@ -644,6 +856,7 @@ function handleFile(e) {
 			AoESim.Stats.Buildings[dummy].Prerequisites = ws[ii][8];
 			AoESim.Stats.Buildings[dummy].Effects = ws[ii][9];															
 		}
+		UpdateBuildingOptions(AoESim);
 
 		
 		// Upgrades

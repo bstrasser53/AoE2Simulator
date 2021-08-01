@@ -98,7 +98,7 @@
 <input type="image" src="./Pix/deer.png" onClick="javascript:BuildDeerVil(AoESim)" width="40" height="40" />
 <input type="image" src="./Pix/farmer.png" onClick="javascript:BuildFarmVil(AoESim)" width="40" height="40" />
 <input type="image" src="./Pix/Berries.webp" onClick="javascript:BuildBerryVil(AoESim)" width="40" height="40" />
-<input type="image" src="./Pix/ArrowRight.png" onClick="javascript:AdvanceToNextEvent(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/ArrowRight.png" onClick="javascript:AdvanceInTime(AoESim)" width="40" height="40" />
 
 <br>
 <input type="image" src="./Pix/trees.jpeg" onClick="javascript:BuildWoodVil(AoESim)" width="40" height="40" />
@@ -201,10 +201,12 @@ function InitializeState()
 	//ReadExcel();
 	AoESim = {
 		State: {
+			CurAge: 1,		// 1 = Dark Age, 2 = Feudal Age, 3 = Castle Age, 4 = Imperial Age
 			Time: 0,
 			CurEventIndex: 0,
 			Resources: [200,200,100,200],		// Wood, Food, Gold, Stone
 			Pop: 4,
+			MaxPop: 5,
 			TotalVils: 3,
 			Vils: {
 				Idles: 0,
@@ -244,34 +246,34 @@ function InitializeState()
 				TCToStoneMiners: 20,
 				Generic: 10
 			},
-			Buildings: { // If 2-element array, first index gives how man buildins exist, while second gives number of idle buildings. For farms and fishtraps, this shows unoccupied farms/traps
-				TownCenter: [1,1],
-				House: 0,
-				Mill: 0,
-				Farm: [0,0],
-				LumberCamp: 0,
-				MiningCamp: 0,
-				Dock: [0,0],
-				Barrack: [0,0],
-				Palisade: 0,
-				PalisadeGate: 0,
-				Outpost: 0,
-				Market: 0,
-				Blacksmith: [0,0],
-				FishTrap: [0,0],
-				ArcheryRange: [0,0],
-				Stable: [0,0],
-				StoneWall: 0,
-				Gate: 0,
-				WatchTower: 0,
-				Donjon: [0,0],
-				Monastery: [0,0],
-				University: [0,0],
-				SiegeWorkshop: [0,0],
-				Castle: [0,0],
-				Krepost: [0,0],
-				BombardTower: 0,
-				Feitoria: 0
+			Buildings: { // First index: How man buildins exist, Second: Number of idle buildings (farms & fishtrap: unoccupied farms/traps). Third: Is building currently available?
+				TownCenter: [1,1,0],
+				House: [0,0,1],
+				Mill: [0,0,1],
+				Farm: [0,0,0],
+				LumberCamp: [0,0,1],
+				MiningCamp: [0,0,1],
+				Dock: [0,0,1],
+				Barracks: [0,0,1],
+				Palisadex4: [0,0,1],
+				PalisadeGate: [0,0,1],
+				Outpost: [0,0,1],
+				Market: [0,0,0],
+				Blacksmith: [0,0,0],
+				FishTrap: [0,0,0],
+				ArcheryRange: [0,0,0],
+				Stable: [0,0,0],
+				StoneWallx2: [0,0,0],
+				Gate: [0,0,0],
+				WatchTower: [0,0,0],
+				Donjon: [0,0,0],
+				Monastery: [0,0,0],
+				University: [0,0,0],
+				SiegeWorkshop: [0,0,0],
+				Castle: [0,0,0],
+				Krepost: [0,0,0],
+				BombardTower: [0,0,0],
+				Feitoria: [0,0,0]
 			},
 				EventBar: {
 					TotLanes: 8,
@@ -291,11 +293,15 @@ function InitializeState()
 			Buildings: {},
 			Units: {},
 			Upgrades: {}
+		},
+		Consts: {
+			PopPerHouse: 5,
+			FoodPerFarm: 175,
+			FoodPerFishTrap: 715
+			
 		}
 	};
 		
-
-
 	WriteOutResources(AoESim);
 	WriteOutVils(AoESim);
 	//return AoESim;
@@ -376,7 +382,8 @@ function FlushUnitBarLane(AoESim,FlushWidth) {
 
 
 
-function AdvanceToNextEvent(AoESim) {
+// Time, Events & Timing Functions
+function AdvanceInTime(AoESim) {
 
 	var NextEventTime = AoESim.Events[AoESim.State.CurEventIndex+1].EventTime;
 	var ElapsedTime = NextEventTime - AoESim.State.Time;	
@@ -424,10 +431,10 @@ function AdvanceToNextEvent(AoESim) {
 	WriteOutResources(AoESim);
 	WriteOutVils(AoESim);
 
-	// Immediately proceed to next event, if all events should not be visible for user (e.g. an automatic retasking of Walker-vil --> Shepherd should not be visible for user)
+	// Immediately proceed to next event group, if all events are not visible for user (e.g. an automatic retasking of Walker-vil --> Shepherd should not be visible for user)
 	if(AnyEventVisible === 0)
 	{
-		AdvanceToNextEvent(AoESim);
+		AdvanceInTime(AoESim);
 	}
 	
 }
@@ -444,10 +451,15 @@ function DetermineEventIndex(AoESim,EventTime){
 	}
 	return EventIndex;
 }
+// Time, Events & Timing Functions END
 
 
-
+// Build, Research & Add Functions
 function BuildUnit(AoESim,UnitName,UnitTask,EventBarIcon) {
+	// BUG REMINDERS:
+	// NEED SUFFICIENT POP TO BUILD UNIT!
+	// ALSO NEED TO ADD POP WHEN STARTING TO BUILD UNIT, NOT WHEN IT'S FINISHED (so here in BuildUnit, not in AddUnit as it is now!).
+	
 
 	UnitStatsTmp = UnitStats(UnitName);
 	
@@ -474,6 +486,7 @@ function BuildUnit(AoESim,UnitName,UnitTask,EventBarIcon) {
 
 
 
+
 function AddUnit(AoESim,UnitName,UnitTask,EventLane) {
 
 	UnitStatsTmp = UnitStats(UnitName);
@@ -493,9 +506,9 @@ function AddUnit(AoESim,UnitName,UnitTask,EventLane) {
 	
 }
 
-function RetaskVillager(AoESim,RetaskFrom,RetaskTo) {
-	AoESim.State.Vils[RetaskFrom] = AoESim.State.Vils[RetaskFrom] - 1;
-	AoESim.State.Vils[RetaskTo] = AoESim.State.Vils[RetaskTo] + 1;
+function RetaskVillager(AoESim,RetaskFrom,RetaskTo,NoOfVils) {
+	AoESim.State.Vils[RetaskFrom] = AoESim.State.Vils[RetaskFrom] - NoOfVils;
+	AoESim.State.Vils[RetaskTo] = AoESim.State.Vils[RetaskTo] + NoOfVils;
 	WriteOutVils(AoESim);
 }
 
@@ -504,11 +517,9 @@ function BuildSheepVil(AoESim) {
 	if(ErrorOccurred === 0)
 	{	
 		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToShepherds);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToShepherds, EventFunction: "RetaskVillager(AoESim,'Walkers','Shepherds');", UserVisible: 0	});	// Not necessary for user to see this event
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToShepherds, EventFunction: "RetaskVillager(AoESim,'Walkers','Shepherds',1);", UserVisible: 0	});	// Not necessary for user to see this event
 	}
 }
-
-
 
 
 function BuildBoarVil(AoESim) {
@@ -516,7 +527,7 @@ function BuildBoarVil(AoESim) {
 	if(ErrorOccurred === 0)
 	{
 		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToHunters);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToHunters, EventFunction: "RetaskVillager(AoESim,'Walkers','BoarHunters');", UserVisible: 0	});	// Not necessary for user to see this event
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToHunters, EventFunction: "RetaskVillager(AoESim,'Walkers','BoarHunters',1);", UserVisible: 0	});	// Not necessary for user to see this event
 	}
 }
 
@@ -525,7 +536,7 @@ function BuildDeerVil(AoESim) {
 	if(ErrorOccurred === 0)
 	{
 		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToHunters);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToHunters, EventFunction: "RetaskVillager(AoESim,'Walkers','DeerHunters');", UserVisible: 0	});	// Not necessary for user to see this event
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToHunters, EventFunction: "RetaskVillager(AoESim,'Walkers','DeerHunters',1);", UserVisible: 0	});	// Not necessary for user to see this event
 	}
 }
 
@@ -534,7 +545,7 @@ function BuildWoodVil(AoESim) {
 	if(ErrorOccurred === 0)
 	{
 		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToLumberjacks);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToLumberjacks, EventFunction: "RetaskVillager(AoESim,'Walkers','Lumberjacks');", UserVisible: 0	});	// Not necessary for user to see this event
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToLumberjacks, EventFunction: "RetaskVillager(AoESim,'Walkers','Lumberjacks',1);", UserVisible: 0	});	// Not necessary for user to see this event
 	}
 }
 
@@ -550,7 +561,7 @@ function BuildGoldVil(AoESim) {
 	if(ErrorOccurred === 0)
 	{
 		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToGoldMiners);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToGoldMiners, EventFunction: "RetaskVillager(AoESim,'Walkers','GoldMiners');", UserVisible: 0	});	// Not necessary for user to see this event
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToGoldMiners, EventFunction: "RetaskVillager(AoESim,'Walkers','GoldMiners',1);", UserVisible: 0	});	// Not necessary for user to see this event
 	}
 }
 
@@ -559,7 +570,7 @@ function BuildStoneVil(AoESim) {
 	if(ErrorOccurred === 0)
 	{
 		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToStoneMiners);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToStoneMiners, EventFunction: "RetaskVillager(AoESim,'Walkers','StoneMiners');", UserVisible: 0	});	// Not necessary for user to see this event
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.State.Time + UnitStats("Villager").TrainTime + AoESim.State.WalkTimes.TCToStoneMiners, EventFunction: "RetaskVillager(AoESim,'Walkers','StoneMiners',1);", UserVisible: 0	});	// Not necessary for user to see this event
 	}
 }
 
@@ -577,6 +588,13 @@ function ResearchHandcart() {
 
 }
 */
+// Build, Research & Add Functions END
+
+
+
+
+
+
 
 function UnitStats(UnitName) {
 	Stats = {
@@ -604,12 +622,67 @@ function handleFile(e) {
 		var data = e.target.result;
 		if(!rABS) data = new Uint8Array(data);
 		var workbook = XLSX.read(data, {type: rABS ? 'binary' : 'array'});
+
+
+		// Convert from array of arrays (e.g. ws[0] = [] -->
+		// AoESim.Stats.Buildings. = [];
+		// Buildings
 		var ws = workbook.Sheets[workbook.SheetNames[0]];
-		AoESim.Stats.Buildings = XLSX.utils.sheet_to_json(ws, {header:1});
+		ws = XLSX.utils.sheet_to_json(ws, {header:1});
+		var dummy;
+		for (let ii = 1; ii < ws.length; ii++) {
+			if(ws[ii].length < 1)
+			{
+				break;
+			}
+			dummy = ws[ii][0].replace(/ /g, "");
+			AoESim.Stats.Buildings[dummy] = {};
+			AoESim.Stats.Buildings[dummy].Occupy = ws[ii][1];
+			AoESim.Stats.Buildings[dummy].AvailableAge = ws[ii][2];
+			AoESim.Stats.Buildings[dummy].Cost = ws[ii].slice(3,7);
+			AoESim.Stats.Buildings[dummy].CreateTime = ws[ii][7];
+			AoESim.Stats.Buildings[dummy].Prerequisites = ws[ii][8];
+			AoESim.Stats.Buildings[dummy].Effects = ws[ii][9];															
+		}
+
+		
+		// Upgrades
 		ws = workbook.Sheets[workbook.SheetNames[1]];
-		AoESim.Stats.Upgrades = XLSX.utils.sheet_to_json(ws, {header:1});
+		ws = XLSX.utils.sheet_to_json(ws, {header:1});
+		for (let ii = 1; ii < ws.length; ii++) {
+			if(ws[ii].length < 1)
+			{
+				break;
+			}
+			dummy = ws[ii][0].replace(/ /g, "");
+			//AoESim.Stats.Upgrades[dummy] = ws[ii].slice(1,10);
+			AoESim.Stats.Upgrades[dummy] = {};
+			AoESim.Stats.Upgrades[dummy].Occupy = ws[ii][1];
+			AoESim.Stats.Upgrades[dummy].AvailableAge = ws[ii][2];
+			AoESim.Stats.Upgrades[dummy].Cost = ws[ii].slice(3,7);
+			AoESim.Stats.Upgrades[dummy].CreateTime = ws[ii][7];
+			AoESim.Stats.Upgrades[dummy].Prerequisites = ws[ii][8];
+			AoESim.Stats.Upgrades[dummy].Effects = ws[ii][9];
+		}
+		
+		// Units
 		ws = workbook.Sheets[workbook.SheetNames[2]];
-		AoESim.Stats.Units = XLSX.utils.sheet_to_json(ws, {header:1});
+		ws = XLSX.utils.sheet_to_json(ws, {header:1});
+		for (let ii = 1; ii < ws.length; ii++) {
+			if(ws[ii].length < 1)
+			{
+				break;
+			}
+			dummy = ws[ii][0].replace(/ /g, "");
+			//AoESim.Stats.Units[dummy] = ws[ii].slice(1,10);
+			AoESim.Stats.Units[dummy] = {};
+			AoESim.Stats.Units[dummy].Occupy = ws[ii][1];
+			AoESim.Stats.Units[dummy].AvailableAge = ws[ii][2];
+			AoESim.Stats.Units[dummy].Cost = ws[ii].slice(3,7);
+			AoESim.Stats.Units[dummy].CreateTime = ws[ii][7];
+			AoESim.Stats.Units[dummy].Prerequisites = ws[ii][8];
+			AoESim.Stats.Units[dummy].Effects = ws[ii][9];
+		}
 	};
 	if(rABS) reader.readAsBinaryString(f); else reader.readAsArrayBuffer(f);
 }
@@ -618,6 +691,9 @@ input_dom_element.addEventListener('change', handleFile, false);
 
 
 
+
+
+// Supporting functions & methods
 function addvector(a,b){
     return a.map((e,i) => e + b[i]);
 }
@@ -688,6 +764,12 @@ Array.prototype.AllElementsGreaterOrEqual = function (array) {
 }
 // Hide method from for-in loops
 Object.defineProperty(Array.prototype, "AllElementsGreaterOrEqual", {enumerable: false});
+// Supporting functions & methods END
+
+
+
+
+
 
 
 

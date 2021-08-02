@@ -813,6 +813,15 @@ function BuildDeerVil(AoESim) {
 	}
 }
 
+function BuildBerryVil(AoESim) {
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/Berries.webp');
+	if(ErrorOccurred === 0)
+	{
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToBerries);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToBerries, EventFunction: "RetaskVillager(AoESim,'Walkers','BerryPickers',1);", UserVisible: 0	});	// Not necessary for user to see this event
+	}
+}
+
 function BuildWoodVil(AoESim) {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/trees.jpeg');
 	if(ErrorOccurred === 0)

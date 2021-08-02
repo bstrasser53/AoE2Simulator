@@ -22,6 +22,7 @@
 
 
 <br>
+<!-- PICK CIV UI & SELECT STAT FILE -->
 <label for="lPickedCiv">Which Civ?:</label>
 <select name="sPickedCiv" id="sPickedCiv">
 	<option value="Generic">Generic</option>
@@ -34,6 +35,8 @@
 	<option value="Portuguese">Portuguese</option> -->
 </select> Choose Stats-file: <input name="Statfile" id="Statfile"  class="left" style="width: 300px;" type="file">
 <br>
+
+<!-- BUILD BUILDING UI -->
 <label for="lBuildBuilding">Build Building?</label>
 <select name="sBuildBuilding" id="sBuildBuilding">
 </select>
@@ -221,7 +224,6 @@
 var AoESim;
 function InitializeState() 
 {
-	//ReadExcel();
 	AoESim = {
 		CurState: {
 			CurAge: 1,		// 1 = Dark Age, 2 = Feudal Age, 3 = Castle Age, 4 = Imperial Age
@@ -342,7 +344,7 @@ function WriteOutResources(AoESim) {
 }
 function WriteOutVils(AoESim) {
 
-	document.getElementById("CurPop").innerHTML =  AoESim.CurState.Pop;
+	document.getElementById("CurPop").innerHTML =  AoESim.CurState.Pop + "/" + AoESim.CurState.MaxPop;
 	document.getElementById("CurVils").innerHTML =  AoESim.CurState.TotalVils;
 	document.getElementById("CurIdles").innerHTML =  AoESim.CurState.Vils.Idles;
 	document.getElementById("CurBuilders").innerHTML =  AoESim.CurState.Vils.Builders;
@@ -404,7 +406,7 @@ function FlushUnitBarLane(AoESim,FlushWidth) {
 
 
 // UI Functions
-function UpdateBuildingOptions(AoESim) {
+function UpdateBuildingUI(AoESim) {
     select = document.getElementById('sBuildBuilding');
 	
 	// Remove all building options
@@ -477,11 +479,6 @@ function AdvanceInTime(AoESim) {
 		// Run all events that have the same EventTime as the next one
 		if(AoESim.Events[ii].EventTime === NextEventTime)
 		{
-			// Run EventFunction
-			if(AoESim.Events[ii].EventFunction != "")
-			{
-				eval(AoESim.Events[ii].EventFunction);
-			}
 			
 			// Gather Resources
 			ElapsedTime = NextEventTime - AoESim.CurState.Time;	
@@ -493,6 +490,12 @@ function AdvanceInTime(AoESim) {
 												AoESim.CurState.Vils.BerryPickers*AoESim.CurState.GatherRates.BerryPickers) * ElapsedTime; 
 			AoESim.CurState.Resources[2] = AoESim.CurState.Resources[2] + AoESim.CurState.Vils.GoldMiners*AoESim.CurState.GatherRates.GoldMiners * ElapsedTime;			
 			AoESim.CurState.Resources[3] = AoESim.CurState.Resources[3] + AoESim.CurState.Vils.StoneMiners*AoESim.CurState.GatherRates.StoneMiners * ElapsedTime;						
+			
+			// Run EventFunction (after resource gathering, otherwise RetaskVillager of current event will influence gathered resources!!!)
+			if(AoESim.Events[ii].EventFunction != "")
+			{
+				eval(AoESim.Events[ii].EventFunction);
+			}
 			
 			// Update Current Time & CurEventIndex
 			AoESim.CurState.Time = NextEventTime;
@@ -518,10 +521,8 @@ function AdvanceInTime(AoESim) {
 	{
 		AdvanceInTime(AoESim);
 	}
-	else
-	{
-		UpdateBuilderUI(AoESim);
-	}
+	document.getElementById('Output0').innerHTML = AoESim.CurState.Time;
+	document.getElementById('Output1').innerHTML = AoESim.Events[AoESim.CurState.CurEventIndex].EventFunction;
 	
 }
 
@@ -601,6 +602,8 @@ function AddUnit(AoESim,UnitName,UnitTask,EventLane) {
 		AoESim.CurState.Pop = AoESim.CurState.Pop + 1;
 		AoESim.CurState.Vils[UnitTask] = AoESim.CurState.Vils[UnitTask] + 1;
 		WriteOutVils(AoESim);
+
+		UpdateBuilderUI(AoESim);
 	}
 	
 	// Release Building
@@ -634,7 +637,8 @@ function BuildBuilding(AoESim) {
 	var Builders3No = parseFloat(document.getElementById("lBuilders3Number").value);
 	
 	// Calculate what would happen if we subtracted the builders from their current work
-	var TmpVils = AoESim.CurState.Vils;
+	// Builders1 = Builders2 or similar could happen, so can't just check AoESim.CurState.Vils[Builders1] - Builders1No < 0.
+	let TmpVils = JSON.parse(JSON.stringify(AoESim.CurState.Vils));
 	TmpVils[Builders1] = TmpVils[Builders1] - Builders1No;
 	TmpVils[Builders2] = TmpVils[Builders2] - Builders2No;
 	TmpVils[Builders3] = TmpVils[Builders3] - Builders3No;	
@@ -648,8 +652,9 @@ function BuildBuilding(AoESim) {
 	// Otherwise: Build building!
 	var TotBuilders = Builders1No+Builders2No+Builders3No;
 	AoESim.CurState.Resources = subtractvector(AoESim.CurState.Resources, BuildingStatsTmp.Cost);
-	AoESim.CurState.Vils = TmpVils;
-	AoESim.CurState.Vils.Walkers = AoESim.CurState.Vils.Walkers + Builders1No + Builders2No + Builders3No;
+	RetaskVillager(AoESim,Builders1,"Walkers",Builders1No);
+	RetaskVillager(AoESim,Builders2,"Walkers",Builders2No);
+	RetaskVillager(AoESim,Builders3,"Walkers",Builders3No);
 	WriteOutResources(AoESim);
 	WriteOutVils(AoESim);	
 
@@ -698,7 +703,7 @@ function AddBuilding(AoESim,BuildingName,TotBuilders,EventLane) {
 	}
 	if(NeedBuildingsUpdate === 1)
 	{
-		UpdateBuildingOptions(AoESim);
+		UpdateBuildingUI(AoESim);
 	}
 	
 	// Apply Effect of Building
@@ -716,13 +721,6 @@ function AddBuilding(AoESim,BuildingName,TotBuilders,EventLane) {
 	
 }
 
-
-
-function RetaskVillager(AoESim,RetaskFrom,RetaskTo,NoOfVils) {
-	AoESim.CurState.Vils[RetaskFrom] = AoESim.CurState.Vils[RetaskFrom] - NoOfVils;
-	AoESim.CurState.Vils[RetaskTo] = AoESim.CurState.Vils[RetaskTo] + NoOfVils;
-	WriteOutVils(AoESim);
-}
 
 function BuildSheepVil(AoESim) {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/shepherd.png');
@@ -806,6 +804,17 @@ function ResearchHandcart() {
 
 
 
+// Retask Functions
+function RetaskVillager(AoESim,RetaskFrom,RetaskTo,NoOfVils) {
+	AoESim.CurState.Vils[RetaskFrom] = AoESim.CurState.Vils[RetaskFrom] - NoOfVils;
+	AoESim.CurState.Vils[RetaskTo] = AoESim.CurState.Vils[RetaskTo] + NoOfVils;
+	WriteOutVils(AoESim);
+	UpdateBuilderUI(AoESim);
+}
+
+// Retask Functions END
+
+
 
 
 function UnitStats(UnitName) {
@@ -856,7 +865,7 @@ function handleFile(e) {
 			AoESim.Stats.Buildings[dummy].Prerequisites = ws[ii][8];
 			AoESim.Stats.Buildings[dummy].Effects = ws[ii][9];															
 		}
-		UpdateBuildingOptions(AoESim);
+		UpdateBuildingUI(AoESim);
 
 		
 		// Upgrades

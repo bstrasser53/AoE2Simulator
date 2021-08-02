@@ -60,6 +60,23 @@
 <input type="number" value="0" id="lBuilders3Number" name="lBuilders3Number" required minlength="1" maxlength="2" size="1">
 <button type="button" onclick="BuildBuilding(AoESim)">Build!</button>
 <br>
+
+
+
+<!-- VIL RETASK UI -->
+<label for="lRetaskVils">Retask Vils?</label>
+
+<label for="lRetaskFrom">Retask From:</label>
+<select name="sRetaskFrom" id="sRetaskFrom">
+</select>
+<label for="lRetaskTo">Retask To:</label>
+<select name="sRetaskTo" id="sRetaskTo">
+</select>
+<label for="lRetaskNumber">Amount:</label>
+<input type="number" value="0" id="RetaskNumber" name="RetaskNumber" required minlength="1" maxlength="2" size="1">
+<button type="button" onclick="RetaskVillagerByUser(AoESim)">Retask!</button>
+
+
 <br>
 
 
@@ -234,10 +251,10 @@ function InitializeState()
 			MaxPop: 5,
 			TotalVils: 3,
 			Vils: {
-				Idles: 0,
+				Idles: 3,
 				Builders: 0,
 				Walkers: 0,
-				Shepherds: 3,
+				Shepherds: 0,
 				BoarHunters: 0,
 				DeerHunters: 0,
 				BerryPickers: 0,
@@ -330,6 +347,8 @@ function InitializeState()
 	WriteOutResources(AoESim);
 	WriteOutVils(AoESim);
 	UpdateBuilderUI(AoESim);
+	InitRetaskUI(AoESim);
+	UpdateRetaskUI(AoESim);
 }
 
 
@@ -462,6 +481,50 @@ function UpdateBuilderUI(AoESim) {
 			select3.appendChild(opt3);
 		}
 	}
+}
+function InitRetaskUI(AoESim) {
+	// Show only options to use villagers as builders that are available
+    select1 = document.getElementById('sRetaskTo');
+    	
+	// Add new options
+	for (var propp in AoESim.CurState.Vils) {
+		var opt1 = document.createElement('option');
+		opt1.value = propp;
+		opt1.innerHTML = propp;
+		select1.appendChild(opt1);
+	}
+}
+function UpdateRetaskUI(AoESim) {
+	// Show only options to use villagers as builders that are available
+    select1 = document.getElementById('sRetaskFrom');
+	var CurSelected = select1.value;
+    
+    // Remove all previous options
+	while (select1.firstChild) {
+		select1.removeChild(select1.firstChild);
+	}
+
+	
+	// Add new options
+	for (var propp in AoESim.CurState.Vils) {
+		if(AoESim.CurState.Vils[propp] > 0)
+		{
+			var opt1 = document.createElement('option');
+			opt1.value = propp;
+			opt1.innerHTML = propp;
+			select1.appendChild(opt1);
+			
+			// If previously selected option still exists, select it again!
+			if( propp === CurSelected)
+			{
+				select1.value = CurSelected;
+			}			
+			
+		}
+	}
+	
+
+	
 }
 // UI Functions END
 
@@ -602,7 +665,7 @@ function AddUnit(AoESim,UnitName,UnitTask,EventLane) {
 		AoESim.CurState.Pop = AoESim.CurState.Pop + 1;
 		AoESim.CurState.Vils[UnitTask] = AoESim.CurState.Vils[UnitTask] + 1;
 		WriteOutVils(AoESim);
-
+		UpdateRetaskUI(AoESim);
 		UpdateBuilderUI(AoESim);
 	}
 	
@@ -809,9 +872,42 @@ function RetaskVillager(AoESim,RetaskFrom,RetaskTo,NoOfVils) {
 	AoESim.CurState.Vils[RetaskFrom] = AoESim.CurState.Vils[RetaskFrom] - NoOfVils;
 	AoESim.CurState.Vils[RetaskTo] = AoESim.CurState.Vils[RetaskTo] + NoOfVils;
 	WriteOutVils(AoESim);
+	UpdateRetaskUI(AoESim);
 	UpdateBuilderUI(AoESim);
 }
 
+function RetaskVillagerByUser(AoESim) {
+
+	// Get Info from UI
+	var RetaskFrom = document.getElementById("sRetaskFrom").value;
+	var RetaskTo = document.getElementById("sRetaskTo").value;	
+	var RetaskNumber = parseFloat(document.getElementById("RetaskNumber").value);
+
+	// Check if we would get negative vil distribution. Don't retask in that case!
+	if(AoESim.CurState.Vils[RetaskFrom] - RetaskNumber < 0)
+	{
+		return 1;
+	}
+	
+	// In most cases, we need to first retask vil to walker, and add an event to change unit to demanded task. E.g. when retasking from Shepherds --> Lumberjacks, vil needs to walk first to wood!
+	// Only when tasking to Idles, Walkers, or StragglerLumberjacks we don't need walking (in the latter case, the low gather rate includes the walking already!)
+	if(RetaskTo === "Idles" || RetaskTo === "Walkers" || RetaskTo === "StragglerLumberjacks")
+	{
+		RetaskVillager(AoESim,RetaskFrom,RetaskTo,RetaskNumber);
+	}
+	else
+	{
+		var WalkTime = CalcWalkTime(RetaskFrom,RetaskTo);
+		RetaskVillager(AoESim,RetaskFrom,"Walkers",RetaskNumber);
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + WalkTime);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + WalkTime, EventFunction: "RetaskVillager(AoESim,'Walkers','" + RetaskTo + "'," + RetaskNumber + ");", UserVisible: 0	});				
+	}
+	
+	
+	// Maybe add some icon? Not implemented yet...
+	
+	
+}
 // Retask Functions END
 
 

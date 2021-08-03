@@ -395,7 +395,7 @@ function AddImageToEventBar(AoESim,EventBarIcon,IconWidth) {
 			break;
 		}
 	}	
-	if (typeof UseLane === 'undefined') {
+	if (typeof(UseLane) === 'undefined' || UseLane === 'undefined') {
 		return -1;
 	}
 	
@@ -623,6 +623,12 @@ function CalcWalkTime(RetaskFrom,RetaskTo,BuildingName) {
 	return 10;
 	
 }
+function AddEvent(AoESim,EventTimeFromNow,EventFunctionIn,UserVisibleIn){
+		// Determine where to add the event
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + EventTimeFromNow);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + EventTimeFromNow, EventFunction: EventFunctionIn, UserVisible: UserVisibleIn});
+
+}
 // Time, Events & Timing Functions END
 
 
@@ -648,10 +654,8 @@ function BuildUnit(AoESim,UnitName,UnitTask,EventBarIcon) {
 		var EventLane = AddImageToEventBar(AoESim,EventBarIcon,UnitStatsTmp.TrainTime);
 
 		// Add Event to Add Unit
-		// Determine where to add the event
-		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStatsTmp.TrainTime);
 		// Events of AddUnit should always be visible for user, because this means some building is getting idle! 
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStatsTmp.TrainTime, EventFunction: "AddUnit(AoESim, '" + UnitName + "', '" + UnitTask + "', " + EventLane + ");", UserVisible: 1});	
+		AddEvent(AoESim,UnitStatsTmp.TrainTime,"AddUnit(AoESim, '" + UnitName + "', '" + UnitTask + "', " + EventLane + ");", 1);
 		
 		return 0;	
 	}
@@ -757,24 +761,21 @@ function BuildBuilding(AoESim,BuildingName,WalkTime,Builders1,Builders2,Builders
 
 	// Add Events to 
 	// 1) Retask vils from walkers --> builders 
-	var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + WalkTime);	
-	AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + WalkTime, EventFunction: "RetaskVillager(AoESim,'Walkers','Builders'," + TotBuilders + ");", UserVisible: 0});
+	AddEvent(AoESim,WalkTime,"RetaskVillager(AoESim,'Walkers','Builders'," + TotBuilders + ");", 0);
 	
 	// 2) Add building
-	var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + WalkTime + BuildTime);	
-	AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + WalkTime + BuildTime, EventFunction: "AddBuilding(AoESim, '" + BuildingName + "', " + TotBuilders + ", " + EventLane + ",'" + TaskWhenFinished + "'," + WalktimeWhenFinished + ");", UserVisible: 1});	
-
+	AddEvent(AoESim,WalkTime + BuildTime,"AddBuilding(AoESim, '" + BuildingName + "', " + TotBuilders + ", " + EventLane + ",'" + TaskWhenFinished + "'," + WalktimeWhenFinished + ");", 1);
 
 }
 
 function AddBuilding(AoESim,BuildingName,TotBuilders,EventLane,TaskWhenFinished,WalktimeWhenFinished) {
 
 	// Default values
-	if(typeof(TaskWhenFinished) === "undefined")
+	if(typeof(TaskWhenFinished) === "undefined" || TaskWhenFinished === "undefined")
 	{
 		TaskWhenFinished = "IdleBuilders";
 	}
-	if(typeof(WalktimeWhenFinished) === "undefined")
+	if(typeof(WalktimeWhenFinished) === "undefined" || WalktimeWhenFinished === "undefined")
 	{
 		WalktimeWhenFinished = 0;
 	}
@@ -806,8 +807,7 @@ function AddBuilding(AoESim,BuildingName,TotBuilders,EventLane,TaskWhenFinished,
 	if(WalktimeWhenFinished > 0)
 	{
 		RetaskVillager(AoESim,'Builders','Walkers', TotBuilders);
-		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + WalktimeWhenFinished);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + WalktimeWhenFinished, EventFunction: "RetaskVillager(AoESim,'Walkers','" + TaskWhenFinished + "',1);", UserVisible: 0	});
+		AddEvent(AoESim,WalktimeWhenFinished,"RetaskVillager(AoESim,'Walkers','" + TaskWhenFinished + "',1);", 0);
 	}
 	else
 	{
@@ -825,8 +825,7 @@ function BuildSheepVil(AoESim) {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/shepherd.png');
 	if(ErrorOccurred === 0)
 	{	
-		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToShepherds);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToShepherds, EventFunction: "RetaskVillager(AoESim,'Walkers','Shepherds',1);", UserVisible: 0	});	// Not necessary for user to see this event
+		AddEvent(AoESim,UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToShepherds,"RetaskVillager(AoESim,'Walkers','Shepherds',1);", 0);
 	}
 }
 
@@ -835,8 +834,7 @@ function BuildBoarVil(AoESim) {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/boar.webp');
 	if(ErrorOccurred === 0)
 	{
-		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToHunters);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToHunters, EventFunction: "RetaskVillager(AoESim,'Walkers','BoarHunters',1);", UserVisible: 0	});	// Not necessary for user to see this event
+		AddEvent(AoESim,UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToHunters,"RetaskVillager(AoESim,'Walkers','BoarHunters',1);", 0);
 	}
 }
 
@@ -844,8 +842,7 @@ function BuildDeerVil(AoESim) {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/deer.png');
 	if(ErrorOccurred === 0)
 	{
-		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToHunters);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToHunters, EventFunction: "RetaskVillager(AoESim,'Walkers','DeerHunters',1);", UserVisible: 0	});	// Not necessary for user to see this event
+		AddEvent(AoESim,UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToHunters,"RetaskVillager(AoESim,'Walkers','DeerHunters',1);", 0);
 	}
 }
 
@@ -856,8 +853,7 @@ function BuildBerryVil(AoESim) {
 		ErrorOccurred = BuildUnit(AoESim,'Villager','IdleVils','./Pix/Berries.webp');	
 		if(ErrorOccurred === 0)
 		{		
-			var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToBerries);
-			AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStats("Villager").TrainTime, EventFunction: "BuildBuilding(AoESim,'Mill'," + AoESim.CurState.WalkTimes.TCToBerries + ",'IdleVils','','',1,0,0,'BerryPickers',2);", UserVisible: 0	});	
+			AddEvent(AoESim,UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToBerries,"BuildBuilding(AoESim,'Mill'," + AoESim.CurState.WalkTimes.TCToBerries + ",'IdleVils','','',1,0,0,'BerryPickers',2);", 0);			
 		}
 	}
 	else
@@ -866,9 +862,8 @@ function BuildBerryVil(AoESim) {
 		
 	if(ErrorOccurred === 0)
 	{
-		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToBerries);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToBerries, EventFunction: "RetaskVillager(AoESim,'Walkers','BerryPickers',1);", UserVisible: 0	});	// Not necessary for user to see this event
-		}
+		AddEvent(AoESim,UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToBerries,"RetaskVillager(AoESim,'Walkers','BerryPickers',1);", 0);
+	}
 	}
 }
 
@@ -876,8 +871,7 @@ function BuildWoodVil(AoESim) {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/trees.jpeg');
 	if(ErrorOccurred === 0)
 	{
-		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToLumberjacks);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToLumberjacks, EventFunction: "RetaskVillager(AoESim,'Walkers','Lumberjacks',1);", UserVisible: 0	});	// Not necessary for user to see this event
+		AddEvent(AoESim,UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToLumberjacks,"RetaskVillager(AoESim,'Walkers','Lumberjacks',1);", 0);
 	}
 }
 
@@ -892,8 +886,7 @@ function BuildGoldVil(AoESim) {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/gold_miner.png');
 	if(ErrorOccurred === 0)
 	{
-		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToGoldMiners);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToGoldMiners, EventFunction: "RetaskVillager(AoESim,'Walkers','GoldMiners',1);", UserVisible: 0	});	// Not necessary for user to see this event
+		AddEvent(AoESim,UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToGoldMiners,"RetaskVillager(AoESim,'Walkers','GoldMiners',1);", 0);
 	}
 }
 
@@ -901,8 +894,7 @@ function BuildStoneVil(AoESim) {
 	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/stone_miner.png');
 	if(ErrorOccurred === 0)
 	{
-		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToStoneMiners);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToStoneMiners, EventFunction: "RetaskVillager(AoESim,'Walkers','StoneMiners',1);", UserVisible: 0	});	// Not necessary for user to see this event
+		AddEvent(AoESim,UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToStoneMiners,"RetaskVillager(AoESim,'Walkers','StoneMiners',1);", 0);
 	}
 }
 
@@ -958,8 +950,7 @@ function RetaskVillagerByUser(AoESim) {
 	{
 		var WalkTime = CalcWalkTime(RetaskFrom,RetaskTo);
 		RetaskVillager(AoESim,RetaskFrom,"Walkers",RetaskNumber);
-		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + WalkTime);
-		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + WalkTime, EventFunction: "RetaskVillager(AoESim,'Walkers','" + RetaskTo + "'," + RetaskNumber + ");", UserVisible: 0	});				
+		AddEvent(AoESim,WalkTime,"RetaskVillager(AoESim,'Walkers','" + RetaskTo + "'," + RetaskNumber + ");", 0);		
 	}
 	
 	

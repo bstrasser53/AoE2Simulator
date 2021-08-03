@@ -58,7 +58,7 @@
 </select>
 <label for="lBuilders3Number">Amount:</label>
 <input type="number" value="0" id="lBuilders3Number" name="lBuilders3Number" required minlength="1" maxlength="2" size="1">
-<button type="button" onclick="BuildBuilding(AoESim)">Build!</button>
+<button type="button" onclick="BuildBuildingByUser(AoESim)">Build!</button>
 <br>
 
 
@@ -91,6 +91,7 @@
 		<th>Pop</th>
 		<th>Vils</th>
 		<th>Idles</th>
+		<th>IdleBuilders</th>		
 		<th>Builders</th>
 		<th>Walkers</th>
 		<th>Shepherds</th>
@@ -112,6 +113,7 @@
 		<td id="CurPop">0</td>
 		<td id="CurVils">0</td>		
 		<td id="CurIdles">0</td>
+		<td id="CurIdleBuilders">0</td>		
 		<td id="CurBuilders">0</td>
 		<td id="CurWalkers">0</td>
 		<td id="CurShepherds">3</td>
@@ -252,6 +254,7 @@ function InitializeState()
 			TotalVils: 3,
 			Vils: {
 				Idles: 3,
+				IdleBuilders: 0,				
 				Builders: 0,
 				Walkers: 0,
 				Shepherds: 0,
@@ -288,7 +291,7 @@ function InitializeState()
 				TCToStoneMiners: 20,
 				Generic: 10
 			},
-			Buildings: { // First index: How man buildins exist, Second: Number of idle buildings (farms & fishtrap: unoccupied farms/traps). Third: Is building currently available?
+			Buildings: { // First index: How many buildins exist or are started to be built, Second: Number of idle buildings (farms & fishtrap: unoccupied farms/traps). Third: Is building currently available?
 				TownCenter: [1,1,0],
 				House: [0,0,1],
 				Mill: [0,0,1],
@@ -366,6 +369,7 @@ function WriteOutVils(AoESim) {
 	document.getElementById("CurPop").innerHTML =  AoESim.CurState.Pop + "/" + AoESim.CurState.MaxPop;
 	document.getElementById("CurVils").innerHTML =  AoESim.CurState.TotalVils;
 	document.getElementById("CurIdles").innerHTML =  AoESim.CurState.Vils.Idles;
+	document.getElementById("CurIdleBuilders").innerHTML =  AoESim.CurState.Vils.IdleBuilders;
 	document.getElementById("CurBuilders").innerHTML =  AoESim.CurState.Vils.Builders;
 	document.getElementById("CurWalkers").innerHTML =  AoESim.CurState.Vils.Walkers;
 	document.getElementById("CurShepherds").innerHTML =  AoESim.CurState.Vils.Shepherds;
@@ -554,15 +558,16 @@ function AdvanceInTime(AoESim) {
 			AoESim.CurState.Resources[2] = AoESim.CurState.Resources[2] + AoESim.CurState.Vils.GoldMiners*AoESim.CurState.GatherRates.GoldMiners * ElapsedTime;			
 			AoESim.CurState.Resources[3] = AoESim.CurState.Resources[3] + AoESim.CurState.Vils.StoneMiners*AoESim.CurState.GatherRates.StoneMiners * ElapsedTime;						
 			
+			// Update Current Time & CurEventIndex
+			AoESim.CurState.Time = NextEventTime;
+			AoESim.CurState.CurEventIndex = ii;	
+			
 			// Run EventFunction (after resource gathering, otherwise RetaskVillager of current event will influence gathered resources!!!)
 			if(AoESim.Events[ii].EventFunction != "")
 			{
 				eval(AoESim.Events[ii].EventFunction);
 			}
 			
-			// Update Current Time & CurEventIndex
-			AoESim.CurState.Time = NextEventTime;
-			AoESim.CurState.CurEventIndex = ii;	
 			
 			if(AoESim.Events[ii].UserVisible === 1)
 			{
@@ -604,7 +609,7 @@ function DetermineEventIndex(AoESim,EventTime){
 
 function CalcWalkTime(RetaskFrom,RetaskTo,BuildingName) {
 
-	if((RetaskFrom === "Idles" || RetaskFrom === "Builders") && RetaskTo == "Builders")
+	if((RetaskFrom === "IdleBuilders" || RetaskFrom === "Builders") && RetaskTo == "Builders")
 	{
 		return 1;
 	}
@@ -679,10 +684,10 @@ function AddUnit(AoESim,UnitName,UnitTask,EventLane) {
 
 
 
-function BuildBuilding(AoESim) {
+function BuildBuildingByUser(AoESim) {
 
 	var BuildingName = document.getElementById("sBuildBuilding").value;
-	BuildingStatsTmp = AoESim.Stats.Buildings[BuildingName];
+	var BuildingStatsTmp = AoESim.Stats.Buildings[BuildingName];
 	
 	// Return error if we cannot afford building. Don't build it in that case!
 	if(!AoESim.CurState.Resources.AllElementsGreaterOrEqual(BuildingStatsTmp.Cost))
@@ -713,6 +718,13 @@ function BuildBuilding(AoESim) {
 	}
 
 	// Otherwise: Build building!
+	BuildBuilding(AoESim,BuildingName,Builders1,Builders2,Builders3,Builders1No,Builders2No,Builders3No);
+}
+
+function BuildBuilding(AoESim,BuildingName,Builders1,Builders2,Builders3,Builders1No,Builders2No,Builders3No) {
+
+	var BuildingStatsTmp = AoESim.Stats.Buildings[BuildingName];
+
 	var TotBuilders = Builders1No+Builders2No+Builders3No;
 	AoESim.CurState.Resources = subtractvector(AoESim.CurState.Resources, BuildingStatsTmp.Cost);
 	RetaskVillager(AoESim,Builders1,"Walkers",Builders1No);
@@ -720,6 +732,9 @@ function BuildBuilding(AoESim) {
 	RetaskVillager(AoESim,Builders3,"Walkers",Builders3No);
 	WriteOutResources(AoESim);
 	WriteOutVils(AoESim);	
+
+	// Add building to existing or to be constructed buildings. Need to do that here, otherwise, when clicking at berry-vil several times, and no mill exists, several mills might be built!
+	AoESim.CurState.Buildings[BuildingName][0] = AoESim.CurState.Buildings[BuildingName][0] + 1;
 
 	// Calc timings
 	
@@ -752,7 +767,6 @@ function BuildBuilding(AoESim) {
 function AddBuilding(AoESim,BuildingName,TotBuilders,EventLane) {
 
 	// Add Building
-	AoESim.CurState.Buildings[BuildingName][0] = AoESim.CurState.Buildings[BuildingName][0] + 1;
 	AoESim.CurState.Buildings[BuildingName][1] = AoESim.CurState.Buildings[BuildingName][1] + 1;
 	
 	// Does the building enable another building? If so, enable the new building!
@@ -776,7 +790,7 @@ function AddBuilding(AoESim,BuildingName,TotBuilders,EventLane) {
 	}
 	
 	// Release Builders
-	RetaskVillager(AoESim,'Builders','Idles', TotBuilders);
+	RetaskVillager(AoESim,'Builders','IdleBuilders', TotBuilders);
 
 	// Release Event Lane	
 	ReleaseEventBarLane(AoESim,EventLane);

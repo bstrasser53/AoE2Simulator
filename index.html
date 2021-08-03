@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>AoE Simulator</title>
+  <script src="sheetjs-master/dist/xlsx.full.min.js"></script>
+	<meta charset="UTF-8">
+	<meta name="description" content="Simulator for Age of Empires 2">
+	<meta name="keywords" content="AoE2, Age of Empires 2, AoE Tools, AoE Simulator">
+	<meta name="author" content="Bernhard Strasser">	
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+
+
+<body onload="InitializeState();">
+
+<h2>AoE Simulator</h2>
+<p id="WrittenBy">Written by Bernhard Strasser ([o.p.]kanalratte). Version 0.2.</p>
+<p id="UseOrReuse">Feel free to use or reuse this html & javascript code.</p>
+<p id="Comment">Based on the gathering rate values of Spirit of the Law: <a href="https://www.youtube.com/watch?v=izBnksYw-kM">for gold & wood</a>, <a href="https://www.youtube.com/watch?v=MaqvJMEj69k&t=150s">for farms</a>.</p>
+
+
+<br>
+<!-- PICK CIV UI & SELECT STAT FILE -->
+<label for="lPickedCiv">Which Civ?:</label>
+<select name="sPickedCiv" id="sPickedCiv">
+	<option value="Generic">Generic</option>
+<!--	<option value="Khmer">Khmer</option>
+	<option value="Slavs">Slavs</option>
+	<option value="Aztecs">Aztecs</option>
+	<option value="Berber">Berber</option>
+	<option value="Mayans">Mayans</option>
+	<option value="Burgundians">Burgundians</option>
+	<option value="Portuguese">Portuguese</option> -->
+</select> Choose Stats-file: <input name="Statfile" id="Statfile"  class="left" style="width: 300px;" type="file">
+<br>
+
+<!-- BUILD BUILDING UI -->
+<label for="lBuildBuilding">Build Building?</label>
+<select name="sBuildBuilding" id="sBuildBuilding">
+</select>
+
+<label for="lBuilders1">UseVils1:</label>
+<select name="sBuilders1" id="sBuilders1">
+</select>
+<label for="lBuilders1Number">Amount:</label>
+<input type="number" value="0" id="lBuilders1Number" name="lBuilders1Number" required minlength="1" maxlength="2" size="1">
+
+<label for="lBuilders2">UseVils2:</label>
+<select name="sBuilders2" id="sBuilders2">
+</select>
+<label for="lBuilders2Number">Amount:</label>
+<input type="number" value="0" id="lBuilders2Number" name="lBuilders2Number" required minlength="1" maxlength="2" size="1">
+
+<label for="lBuilders3">UseVils3:</label>
+<select name="sBuilders3" id="sBuilders3">
+</select>
+<label for="lBuilders3Number">Amount:</label>
+<input type="number" value="0" id="lBuilders3Number" name="lBuilders3Number" required minlength="1" maxlength="2" size="1">
+<button type="button" onclick="BuildBuildingByUser(AoESim)">Build!</button>
+<br>
+
+
+
+<!-- VIL RETASK UI -->
+<label for="lRetaskVils">Retask Vils?</label>
+
+<label for="lRetaskFrom">Retask From:</label>
+<select name="sRetaskFrom" id="sRetaskFrom">
+</select>
+<label for="lRetaskTo">Retask To:</label>
+<select name="sRetaskTo" id="sRetaskTo">
+</select>
+<label for="lRetaskNumber">Amount:</label>
+<input type="number" value="0" id="RetaskNumber" name="RetaskNumber" required minlength="1" maxlength="2" size="1">
+<button type="button" onclick="RetaskVillagerByUser(AoESim)">Retask!</button>
+
+
+<br>
+
+
+<table id="CurResources">
+	<tr>
+		<th>Wood</th>
+		<th>Food</th>
+		<th>Gold</th>
+		<th>Stone</th> &nbsp &nbsp &nbsp &nbsp
+		
+		
+		<th>Pop</th>
+		<th>Vils</th>
+		<th>Idles</th>
+		<th>IdleBuilders</th>		
+		<th>Builders</th>
+		<th>Walkers</th>
+		<th>Shepherds</th>
+		<th>BoarHunters</th>
+		<th>DeerHunters</th>
+		<th>BerryPickers</th>
+		<th>Farmers</th>
+		<th>Lumberjacks</th>
+		<th>StragglerLumberjacks</th>
+		<th>GoldMiners</th>
+		<th>StoneMiners</th>
+	</tr>
+	<tr>
+		<td id="CurWoodNumber">20</td>
+		<td id="CurFoodNumber">200</td>
+		<td id="CurGoldNumber">100</td>
+		<td id="CurStoneNumber">200</td>
+
+		<td id="CurPop">0</td>
+		<td id="CurVils">0</td>		
+		<td id="CurIdles">0</td>
+		<td id="CurIdleBuilders">0</td>		
+		<td id="CurBuilders">0</td>
+		<td id="CurWalkers">0</td>
+		<td id="CurShepherds">3</td>
+		<td id="CurBoarHunters">0</td>
+		<td id="CurDeerHunters">0</td>
+		<td id="CurBerryPickers">0</td>
+		<td id="CurFarmers">0</td>
+		<td id="CurLumberjacks">0</td>
+		<td id="CurStragglerLumberjacks">0</td>
+		<td id="CurGoldMiners">0</td>
+		<td id="CurStoneMiners">0</td>
+		
+	</tr>
+</table>
+
+<br>
+<br>
+<br>
+
+
+<!--Build Icons-->
+
+<p id="TCs">TCs: &nbsp &nbsp  &nbsp  &nbsp &nbsp Barracks &nbsp &nbsp &nbsp Archeries &nbsp &nbsp &nbsp Stables &nbsp &nbsp &nbsp Monastaries &nbsp &nbsp &nbsp &nbsp Siege Workshops &nbsp &nbsp &nbsp Castles</p>
+<input type="image" src="./Pix/villager.png" onClick="javascript:BuildUnit(AoESim,'Villager','Idles','./Pix/villager.png')" width="40" height="40" />
+<input type="image" src="./Pix/shepherd.png" onClick="javascript:BuildSheepVil(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/boar.webp" onClick="javascript:BuildBoarVil(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/deer.png" onClick="javascript:BuildDeerVil(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/farmer.png" onClick="javascript:BuildFarmVil(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/Berries.webp" onClick="javascript:BuildBerryVil(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/ArrowRight.png" onClick="javascript:AdvanceInTime(AoESim)" width="40" height="40" />
+
+<br>
+<input type="image" src="./Pix/trees.jpeg" onClick="javascript:BuildWoodVil(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/tree.jpeg" onClick="javascript:BuildStragglerWoodVil(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/gold_miner.png" onClick="javascript:BuildGoldVil(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/stone_miner.png" onClick="javascript:BuildStoneVil(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/wheelbarrow.png" onClick="javascript:ResearchWheelbarrow(AoESim)" width="40" height="40" />
+<input type="image" src="./Pix/hand_cart.png" onClick="javascript:ResearchHandcart(AoESim)" width="40" height="40" />
+
+
+
+
+<!--Event Bar-->
+<br>
+<br>
+<br>
+<br>
+
+
+<div id="EventBar" style="font-size:0">
+	<div id="EventBarLane0" style="font-size:0">
+	</div>
+	<br>
+	<div id="EventBarLane1" style="font-size:0">
+	</div>	
+	<br>
+	<div id="EventBarLane2" style="font-size:0">
+	</div>
+	<br>
+	<div id="EventBarLane3" style="font-size:0">
+	</div>
+	<br>
+	<div id="EventBarLane4" style="font-size:0">
+	</div>
+	<br>
+	<div id="EventBarLane5" style="font-size:0">
+	</div>
+	<br>
+	<div id="EventBarLane6" style="font-size:0">
+	</div>
+	<br>
+	<div id="EventBarLane7" style="font-size:0">
+	</div>
+<!--<img src="Pix/EmptyImage.jpg" onClick="javascript:MoveLineTo()" width="40" height="40">-->
+</div>
+
+
+<!--
+<form>
+  <table id="InputTable">
+    <tr>
+      <td align="right">Vils on Farms:</td>
+      <td align="left"><input type="number" value="10" name="VilsOnFarms" /></td>
+    </tr>
+    <tr>
+      <td align="right">Vils on Wood:</td>
+      <td align="left"><input type="number" value="18" name="VilsOnWood" /></td>
+    </tr>
+    <tr>
+      <td align="right">Vils on Gold:</td>
+      <td align="left"><input type="number" value="6" name="VilsOnGold" /></td>
+    </tr>
+    <tr>
+      <td align="right">Number of Town Centers:</td>
+      <td align="left"><input type="number" value="1" name="NoOfTCs" /></td>
+    </tr>
+  </table>
+</form>
+-->
+
+
+<br>
+<br>
+<br>
+<br>
+
+<p id="Output0"></p>
+<p id="Output1"></p>
+<p id="Output2"></p>
+<p id="Output3"></p>
+<p id="Output4"></p>
+<p id="Output5"></p>
+
+
+
+<!-- DEBUG: -->
+<!-- ->
+<p id="Output7"></p>
+<p id="Output8"></p>
+<p id="Output9"></p>
+<p id="Output10"></p>
+<!- -->
+
+
+<script>
+
+var AoESim;
+function InitializeState() 
+{
+	AoESim = {
+		CurState: {
+			CurAge: 1,		// 1 = Dark Age, 2 = Feudal Age, 3 = Castle Age, 4 = Imperial Age
+			Time: 0,
+			CurEventIndex: 0,
+			Resources: [200,200,100,200],		// Wood, Food, Gold, Stone
+			Pop: 4,
+			MaxPop: 5,
+			TotalVils: 3,
+			Vils: {
+				Idles: 3,
+				IdleBuilders: 0,				
+				Builders: 0,
+				Walkers: 0,
+				Shepherds: 0,
+				BoarHunters: 0,
+				DeerHunters: 0,
+				BerryPickers: 0,
+				Farmers: 0,
+				Lumberjacks: 0,
+				StragglerLumberjacks: 0,
+				GoldMiners: 0,
+				StoneMiners: 0
+			},
+			GatherRates: {
+				Shepherds: 1,
+				Hunters: 1,
+				Farmers: 1,
+				BerryPickers: 1,
+				Lumberjacks: 1,
+				StragglerLumberjacks: 1,
+				GoldMiners: 1,
+				StoneMiners: 1
+				
+			},
+			WalkTimes: {
+				TCToBuilder: 15,
+				TCToWalker: 0,
+				TCToShepherds: 5,
+				TCToHunters: 5,
+				TCToBerries: 20,
+				TCToFarmers: 10,
+				TCToLumberjacks: 20,
+				TCToStragglerLumberjacks: 10,
+				TCToGoldMiners: 20,
+				TCToStoneMiners: 20,
+				Generic: 10
+			},
+			Buildings: { // First index: How many buildins exist or are started to be built, Second: Number of idle buildings (farms & fishtrap: unoccupied farms/traps). Third: Is building currently available?
+				TownCenter: [1,1,0],
+				House: [0,0,1],
+				Mill: [0,0,1],
+				Farm: [0,0,0],
+				LumberCamp: [0,0,1],
+				MiningCamp: [0,0,1],
+				Dock: [0,0,1],
+				Barracks: [0,0,1],
+				Palisadex4: [0,0,1],
+				PalisadeGate: [0,0,1],
+				Outpost: [0,0,1],
+				Market: [0,0,0],
+				Blacksmith: [0,0,0],
+				FishTrap: [0,0,0],
+				ArcheryRange: [0,0,0],
+				Stable: [0,0,0],
+				StoneWallx2: [0,0,0],
+				Gate: [0,0,0],
+				WatchTower: [0,0,0],
+				Donjon: [0,0,0],
+				Monastery: [0,0,0],
+				University: [0,0,0],
+				SiegeWorkshop: [0,0,0],
+				Castle: [0,0,0],
+				Krepost: [0,0,0],
+				BombardTower: [0,0,0],
+				Feitoria: [0,0,0]
+			},
+				EventBar: {
+					TotLanes: 8,
+					LanesOccupied: 0,
+					CurPos: 0,
+					Lanes: [{Occupied: 0, Img: "./Pix/EmptyImage.jpg"}, {Occupied: 0, Img: "./Pix/EmptyImage.jpg"}, {Occupied: 0, Img: "./Pix/EmptyImage.jpg"}, 
+							{Occupied: 0, Img: "./Pix/EmptyImage.jpg"}, {Occupied: 0, Img: "./Pix/EmptyImage.jpg"}, {Occupied: 0, Img: "./Pix/EmptyImage.jpg"},
+							{Occupied: 0, Img: "./Pix/EmptyImage.jpg"}, {Occupied: 0, Img: "./Pix/EmptyImage.jpg"}]
+			}
+		},
+		Events: [{
+			EventTime: 0,
+			EventFunction: "InitializeState();",
+			UserVisible: 1
+		}],
+		Stats: {
+			Buildings: {},
+			Units: {},
+			Upgrades: {}
+		},
+		Consts: {
+			PopPerHouse: 5,
+			FoodPerFarm: 175,
+			FoodPerFishTrap: 715
+			
+		}
+	};
+		
+	WriteOutResources(AoESim);
+	WriteOutVils(AoESim);
+	UpdateBuilderUI(AoESim);
+	InitRetaskUI(AoESim);
+	UpdateRetaskUI(AoESim);
+}
+
+
+
+// Output Functions
+function WriteOutResources(AoESim) {
+
+	document.getElementById("CurWoodNumber").innerHTML =  AoESim.CurState.Resources[0];
+	document.getElementById("CurFoodNumber").innerHTML =  AoESim.CurState.Resources[1];
+	document.getElementById("CurGoldNumber").innerHTML =  AoESim.CurState.Resources[2];
+	document.getElementById("CurStoneNumber").innerHTML =  AoESim.CurState.Resources[3];
+}
+function WriteOutVils(AoESim) {
+
+	document.getElementById("CurPop").innerHTML =  AoESim.CurState.Pop + "/" + AoESim.CurState.MaxPop;
+	document.getElementById("CurVils").innerHTML =  AoESim.CurState.TotalVils;
+	document.getElementById("CurIdles").innerHTML =  AoESim.CurState.Vils.Idles;
+	document.getElementById("CurIdleBuilders").innerHTML =  AoESim.CurState.Vils.IdleBuilders;
+	document.getElementById("CurBuilders").innerHTML =  AoESim.CurState.Vils.Builders;
+	document.getElementById("CurWalkers").innerHTML =  AoESim.CurState.Vils.Walkers;
+	document.getElementById("CurShepherds").innerHTML =  AoESim.CurState.Vils.Shepherds;
+	document.getElementById("CurBoarHunters").innerHTML =  AoESim.CurState.Vils.BoarHunters;
+	document.getElementById("CurDeerHunters").innerHTML =  AoESim.CurState.Vils.DeerHunters;
+	document.getElementById("CurBerryPickers").innerHTML =  AoESim.CurState.Vils.BerryPickers;
+	document.getElementById("CurFarmers").innerHTML =  AoESim.CurState.Vils.Farmers;
+	document.getElementById("CurLumberjacks").innerHTML =  AoESim.CurState.Vils.Lumberjacks;
+	document.getElementById("CurStragglerLumberjacks").innerHTML =  AoESim.CurState.Vils.StragglerLumberjacks;
+	document.getElementById("CurGoldMiners").innerHTML =  AoESim.CurState.Vils.GoldMiners;
+	document.getElementById("CurStoneMiners").innerHTML =  AoESim.CurState.Vils.StoneMiners;
+}
+function AddImageToEventBar(AoESim,EventBarIcon,IconWidth) {
+
+	// Find out which lane to use
+	var UseLane;
+	for (let ii = 0; ii < AoESim.CurState.EventBar.TotLanes; ii++) {
+		if(AoESim.CurState.EventBar.Lanes[ii].Occupied === 0)
+		{
+			AoESim.CurState.EventBar.Lanes[ii].Occupied = 1;
+			AoESim.CurState.EventBar.Lanes[ii].Img = EventBarIcon;
+			UseLane = ii;
+			break;
+		}
+	}	
+	if (typeof UseLane === 'undefined') {
+		return -1;
+	}
+	
+	// Plot image
+	var img = document.createElement('img');
+	img.src = AoESim.CurState.EventBar.Lanes[UseLane].Img;
+	img.style.width = IconWidth + "px";
+	img.style.height = "25px";
+	document.getElementById("EventBarLane" + UseLane).appendChild(img);
+	
+	return UseLane;
+}
+function ReleaseEventBarLane(AoESim,ReleaseLane) {
+	AoESim.CurState.EventBar.Lanes[ReleaseLane].Occupied = 0;
+	AoESim.CurState.EventBar.Lanes[ReleaseLane].Img = './Pix/EmptyImage.jpg';
+}
+function FlushUnitBarLane(AoESim,FlushWidth) {
+	for (let ii = 0; ii < AoESim.CurState.EventBar.TotLanes; ii++) {
+		if(AoESim.CurState.EventBar.Lanes[ii].Occupied === 0){
+			var img = document.createElement('img');
+			img.src = AoESim.CurState.EventBar.Lanes[ii].Img;
+			img.style.width = FlushWidth + "px";
+			img.style.height = "25px";
+			document.getElementById("EventBarLane" + ii).appendChild(img);
+		}
+	}	
+}
+
+// Output Functions END
+
+
+
+// UI Functions
+function UpdateBuildingUI(AoESim) {
+    select = document.getElementById('sBuildBuilding');
+	
+	// Remove all building options
+	while (select.firstChild) {
+		select.removeChild(select.firstChild);
+	}	
+	
+	// Add all currently available buildings
+	for (var propp in AoESim.Stats.Buildings) {
+		if(AoESim.CurState.Buildings[propp][2] > 0)
+		{
+			var opt = document.createElement('option');
+			opt.value = propp;
+			opt.innerHTML = propp;
+			select.appendChild(opt);
+		}
+	}
+}
+function UpdateBuilderUI(AoESim) {
+	// Show only options to use villagers as builders that are available
+    select1 = document.getElementById('sBuilders1');
+    select2 = document.getElementById('sBuilders2');
+    select3 = document.getElementById('sBuilders3');
+    
+    // Remove all previous options
+	while (select1.firstChild) {
+		select1.removeChild(select1.firstChild);
+	}
+	while (select2.firstChild) {
+		select2.removeChild(select2.firstChild);
+	}	
+	while (select3.firstChild) {
+		select3.removeChild(select3.firstChild);
+	}	
+	
+	// Add new options
+	for (var propp in AoESim.CurState.Vils) {
+		if(AoESim.CurState.Vils[propp] > 0)
+		{
+			var opt1 = document.createElement('option');
+			opt1.value = propp;
+			opt1.innerHTML = propp;
+			select1.appendChild(opt1);
+			
+			var opt2 = document.createElement('option');
+			opt2.value = propp;
+			opt2.innerHTML = propp;			
+			select2.appendChild(opt2);
+			
+			var opt3 = document.createElement('option');
+			opt3.value = propp;
+			opt3.innerHTML = propp;				
+			select3.appendChild(opt3);
+		}
+	}
+}
+function InitRetaskUI(AoESim) {
+	// Show only options to use villagers as builders that are available
+    select1 = document.getElementById('sRetaskTo');
+    	
+	// Add new options
+	for (var propp in AoESim.CurState.Vils) {
+		var opt1 = document.createElement('option');
+		opt1.value = propp;
+		opt1.innerHTML = propp;
+		select1.appendChild(opt1);
+	}
+}
+function UpdateRetaskUI(AoESim) {
+	// Show only options to use villagers as builders that are available
+    select1 = document.getElementById('sRetaskFrom');
+	var CurSelected = select1.value;
+    
+    // Remove all previous options
+	while (select1.firstChild) {
+		select1.removeChild(select1.firstChild);
+	}
+
+	
+	// Add new options
+	for (var propp in AoESim.CurState.Vils) {
+		if(AoESim.CurState.Vils[propp] > 0)
+		{
+			var opt1 = document.createElement('option');
+			opt1.value = propp;
+			opt1.innerHTML = propp;
+			select1.appendChild(opt1);
+			
+			// If previously selected option still exists, select it again!
+			if( propp === CurSelected)
+			{
+				select1.value = CurSelected;
+			}			
+			
+		}
+	}
+	
+
+	
+}
+// UI Functions END
+
+
+// Time, Events & Timing Functions
+function AdvanceInTime(AoESim) {
+
+	var NextEventTime = AoESim.Events[AoESim.CurState.CurEventIndex+1].EventTime;
+	var ElapsedTime = NextEventTime - AoESim.CurState.Time;	
+	var AnyEventVisible = 0;
+
+	FlushUnitBarLane(AoESim,ElapsedTime);
+	
+	for (let ii = AoESim.CurState.CurEventIndex+1; ii < AoESim.Events.length; ii++) {
+		// Run all events that have the same EventTime as the next one
+		if(AoESim.Events[ii].EventTime === NextEventTime)
+		{
+			
+			// Gather Resources
+			ElapsedTime = NextEventTime - AoESim.CurState.Time;	
+			AoESim.CurState.Resources[0] = AoESim.CurState.Resources[0] + (AoESim.CurState.Vils.Lumberjacks*AoESim.CurState.GatherRates.Lumberjacks +
+												AoESim.CurState.Vils.StragglerLumberjacks*AoESim.CurState.GatherRates.StragglerLumberjacks) * ElapsedTime;
+			AoESim.CurState.Resources[1] = AoESim.CurState.Resources[1] + (AoESim.CurState.Vils.Shepherds*AoESim.CurState.GatherRates.Shepherds +
+												(AoESim.CurState.Vils.DeerHunters+AoESim.CurState.Vils.BoarHunters)*AoESim.CurState.GatherRates.Hunters +
+												AoESim.CurState.Vils.Farmers*AoESim.CurState.GatherRates.Farmers + 
+												AoESim.CurState.Vils.BerryPickers*AoESim.CurState.GatherRates.BerryPickers) * ElapsedTime; 
+			AoESim.CurState.Resources[2] = AoESim.CurState.Resources[2] + AoESim.CurState.Vils.GoldMiners*AoESim.CurState.GatherRates.GoldMiners * ElapsedTime;			
+			AoESim.CurState.Resources[3] = AoESim.CurState.Resources[3] + AoESim.CurState.Vils.StoneMiners*AoESim.CurState.GatherRates.StoneMiners * ElapsedTime;						
+			
+			// Update Current Time & CurEventIndex
+			AoESim.CurState.Time = NextEventTime;
+			AoESim.CurState.CurEventIndex = ii;	
+			
+			// Run EventFunction (after resource gathering, otherwise RetaskVillager of current event will influence gathered resources!!!)
+			if(AoESim.Events[ii].EventFunction != "")
+			{
+				eval(AoESim.Events[ii].EventFunction);
+			}
+			
+			
+			if(AoESim.Events[ii].UserVisible === 1)
+			{
+				AnyEventVisible = 1;
+			}
+
+		}
+		else
+		{
+			break;
+		}
+
+	}
+	WriteOutResources(AoESim);
+	WriteOutVils(AoESim);
+
+	// Immediately proceed to next event group, if all events are not visible for user (e.g. an automatic retasking of Walker-vil --> Shepherd should not be visible for user)
+	if(AnyEventVisible === 0)
+	{
+		AdvanceInTime(AoESim);
+	}
+	document.getElementById('Output0').innerHTML = AoESim.CurState.Time;
+	document.getElementById('Output1').innerHTML = AoESim.Events[AoESim.CurState.CurEventIndex].EventFunction;
+	
+}
+
+function DetermineEventIndex(AoESim,EventTime){
+
+	// If there is already an event that should come after our event, put it at the index of that event, and move all later events further back. Otherwise put new event as last event.
+	var EventIndex = AoESim.Events.length;
+	for (let ii = AoESim.CurState.CurEventIndex; ii < AoESim.Events.length; ii++) {
+		if(EventTime < AoESim.Events[ii].EventTime){
+			EventIndex = ii;
+			break;
+		} 
+	}
+	return EventIndex;
+}
+
+function CalcWalkTime(RetaskFrom,RetaskTo,BuildingName) {
+
+	if((RetaskFrom === "IdleBuilders" || RetaskFrom === "Builders") && RetaskTo == "Builders")
+	{
+		return 1;
+	}
+	if(BuildingName === "House")
+	{
+		return 5;
+	}
+	
+	
+	// Generic walktime:
+	return 10;
+	
+}
+// Time, Events & Timing Functions END
+
+
+
+
+// Build, Research & Add Functions
+function BuildUnit(AoESim,UnitName,UnitTask,EventBarIcon) {
+	// BUG REMINDERS:
+	// NEED SUFFICIENT POP TO BUILD UNIT!
+	// ALSO NEED TO ADD POP WHEN STARTING TO BUILD UNIT, NOT WHEN IT'S FINISHED (so here in BuildUnit, not in AddUnit as it is now!).
+	
+
+	UnitStatsTmp = UnitStats(UnitName);
+	
+	// Only build unit if we have a building idle to build that unit
+	if(AoESim.CurState.Buildings[UnitStatsTmp.OccupyBuilding][1] > 0 && AoESim.CurState.Resources.AllElementsGreaterOrEqual(UnitStatsTmp.Cost))
+	{
+		AoESim.CurState.Resources = subtractvector(AoESim.CurState.Resources, UnitStatsTmp.Cost);
+		AoESim.CurState.Buildings[UnitStatsTmp.OccupyBuilding][1] = AoESim.CurState.Buildings[UnitStatsTmp.OccupyBuilding][1] - 1;
+		WriteOutResources(AoESim);
+
+		// Plot Unit to EventBar
+		var EventLane = AddImageToEventBar(AoESim,EventBarIcon,UnitStatsTmp.TrainTime);
+
+		// Add Event to Add Unit
+		// Determine where to add the event
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStatsTmp.TrainTime);
+		// Events of AddUnit should always be visible for user, because this means some building is getting idle! 
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStatsTmp.TrainTime, EventFunction: "AddUnit(AoESim, '" + UnitName + "', '" + UnitTask + "', " + EventLane + ");", UserVisible: 1});	
+		
+		return 0;	
+	}
+	return 1;
+}
+
+
+
+
+function AddUnit(AoESim,UnitName,UnitTask,EventLane) {
+
+	UnitStatsTmp = UnitStats(UnitName);
+	if(UnitName === "Villager")
+	{
+		AoESim.CurState.TotalVils = AoESim.CurState.TotalVils + 1;
+		AoESim.CurState.Pop = AoESim.CurState.Pop + 1;
+		AoESim.CurState.Vils[UnitTask] = AoESim.CurState.Vils[UnitTask] + 1;
+		WriteOutVils(AoESim);
+		UpdateRetaskUI(AoESim);
+		UpdateBuilderUI(AoESim);
+	}
+	
+	// Release Building
+	AoESim.CurState.Buildings[UnitStatsTmp.OccupyBuilding][1] = AoESim.CurState.Buildings[UnitStatsTmp.OccupyBuilding][1] + 1;
+
+	// Release Event Lane	
+	ReleaseEventBarLane(AoESim,EventLane);
+	
+}
+
+
+
+function BuildBuildingByUser(AoESim) {
+
+	var BuildingName = document.getElementById("sBuildBuilding").value;
+	var BuildingStatsTmp = AoESim.Stats.Buildings[BuildingName];
+	
+	// Return error if we cannot afford building. Don't build it in that case!
+	if(!AoESim.CurState.Resources.AllElementsGreaterOrEqual(BuildingStatsTmp.Cost))
+	{
+		return 1;
+	}
+	
+	// Further check if assigning builder-vils would cause negative vil-distribution. Also dont build it in that case!
+	// Get Builders-Info
+	var Builders1 = document.getElementById("sBuilders1").value;
+	var Builders1No = parseFloat(document.getElementById("lBuilders1Number").value);
+	var Builders2 = document.getElementById("sBuilders2").value;
+	var Builders2No = parseFloat(document.getElementById("lBuilders2Number").value);
+	var Builders3 = document.getElementById("sBuilders3").value;
+	var Builders3No = parseFloat(document.getElementById("lBuilders3Number").value);
+	
+	// Calculate what would happen if we subtracted the builders from their current work
+	// Builders1 = Builders2 or similar could happen, so can't just check AoESim.CurState.Vils[Builders1] - Builders1No < 0.
+	let TmpVils = JSON.parse(JSON.stringify(AoESim.CurState.Vils));
+	TmpVils[Builders1] = TmpVils[Builders1] - Builders1No;
+	TmpVils[Builders2] = TmpVils[Builders2] - Builders2No;
+	TmpVils[Builders3] = TmpVils[Builders3] - Builders3No;	
+	
+	// Check if we would get negative vil distribution. Don't build building in that case either!
+	if(TmpVils[Builders1] < 0 || TmpVils[Builders2] < 0 || TmpVils[Builders3] < 0)
+	{
+		return 1;
+	}
+
+	// Otherwise: Build building!
+	BuildBuilding(AoESim,BuildingName,"",Builders1,Builders2,Builders3,Builders1No,Builders2No,Builders3No);
+}
+
+function BuildBuilding(AoESim,BuildingName,WalkTime,Builders1,Builders2,Builders3,Builders1No,Builders2No,Builders3No,TaskWhenFinished,WalktimeWhenFinished) {
+
+	var BuildingStatsTmp = AoESim.Stats.Buildings[BuildingName];
+
+	var TotBuilders = Builders1No+Builders2No+Builders3No;
+	AoESim.CurState.Resources = subtractvector(AoESim.CurState.Resources, BuildingStatsTmp.Cost);
+	RetaskVillager(AoESim,Builders1,"Walkers",Builders1No);
+	RetaskVillager(AoESim,Builders2,"Walkers",Builders2No);
+	RetaskVillager(AoESim,Builders3,"Walkers",Builders3No);
+	WriteOutResources(AoESim);
+	WriteOutVils(AoESim);	
+
+	// Add building to existing or to be constructed buildings. Need to do that here, otherwise, when clicking at berry-vil several times, and no mill exists, several mills might be built!
+	AoESim.CurState.Buildings[BuildingName][0] = AoESim.CurState.Buildings[BuildingName][0] + 1;
+
+	// Calc timings
+	
+	// Walk Time
+	// Quirk: It would be too complicated to have different vils arrive at different times to start building. E.g. if we build a castle with 8 vils, and 3 are farmers, and 5 stone miners
+	// and the stone miners arrive earlier than the farmers. Instead, use same walk time for all of them!
+	if(WalkTime === "")
+	{
+		WalkTime = CalcWalkTime(Builders1,"Builders",BuildingName);
+	}
+	
+	// Build Time
+	var BuildTime = 3*BuildingStatsTmp.CreateTime/(2+TotBuilders);
+
+	// Plot Building to EventBar
+	// Remark: Could either set an event to plot Icon when it's really started (after walk-time), or just include the walk-time in the building time when plotting it. I opted for the 2nd option
+	// So the icons will be stretched to include the walk-time.
+	var EventLane = AddImageToEventBar(AoESim,"./Pix/House.webp",WalkTime+BuildTime);
+
+
+	// Add Events to 
+	// 1) Retask vils from walkers --> builders 
+	var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + WalkTime);	
+	AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + WalkTime, EventFunction: "RetaskVillager(AoESim,'Walkers','Builders'," + TotBuilders + ");", UserVisible: 0});
+	
+	// 2) Add building
+	var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + WalkTime + BuildTime);	
+	AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + WalkTime + BuildTime, EventFunction: "AddBuilding(AoESim, '" + BuildingName + "', " + TotBuilders + ", " + EventLane + ",'" + TaskWhenFinished + "'," + WalktimeWhenFinished + ");", UserVisible: 1});	
+
+
+}
+
+function AddBuilding(AoESim,BuildingName,TotBuilders,EventLane,TaskWhenFinished,WalktimeWhenFinished) {
+
+	// Default values
+	if(typeof(TaskWhenFinished) === "undefined")
+	{
+		TaskWhenFinished = "IdleBuilders";
+	}
+	if(typeof(WalktimeWhenFinished) === "undefined")
+	{
+		WalktimeWhenFinished = 0;
+	}
+
+	// Add Building
+	AoESim.CurState.Buildings[BuildingName][1] = AoESim.CurState.Buildings[BuildingName][1] + 1;
+	
+	// Does the building enable another building? If so, enable the new building!
+	var NeedBuildingsUpdate = 0;
+	for (var propp in AoESim.Stats.Buildings) {
+		if(AoESim.Stats.Buildings[propp].Prerequisites === BuildingName && AoESim.CurState.Buildings[propp][2] === 0 && AoESim.CurState.CurAge >= AoESim.Stats.Buildings[propp].AvailableAge)
+		{
+			AoESim.CurState.Buildings[propp][2] = 1;
+			NeedBuildingsUpdate = 1;
+		}
+	}
+	if(NeedBuildingsUpdate === 1)
+	{
+		UpdateBuildingUI(AoESim);
+	}
+	
+	// Apply Effect of Building
+	if(AoESim.Stats.Buildings[BuildingName].Effects != " ")
+	{
+		eval(AoESim.Stats.Buildings[BuildingName].Effects);
+	}
+	
+	// Release Builders
+	if(WalktimeWhenFinished > 0)
+	{
+		RetaskVillager(AoESim,'Builders','Walkers', TotBuilders);
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + WalktimeWhenFinished);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + WalktimeWhenFinished, EventFunction: "RetaskVillager(AoESim,'Walkers','" + TaskWhenFinished + "',1);", UserVisible: 0	});
+	}
+	else
+	{
+		RetaskVillager(AoESim,'Builders',TaskWhenFinished, TotBuilders);	
+	}
+
+	// Release Event Lane	
+	ReleaseEventBarLane(AoESim,EventLane);
+	
+	
+}
+
+
+function BuildSheepVil(AoESim) {
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/shepherd.png');
+	if(ErrorOccurred === 0)
+	{	
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToShepherds);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToShepherds, EventFunction: "RetaskVillager(AoESim,'Walkers','Shepherds',1);", UserVisible: 0	});	// Not necessary for user to see this event
+	}
+}
+
+
+function BuildBoarVil(AoESim) {
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/boar.webp');
+	if(ErrorOccurred === 0)
+	{
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToHunters);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToHunters, EventFunction: "RetaskVillager(AoESim,'Walkers','BoarHunters',1);", UserVisible: 0	});	// Not necessary for user to see this event
+	}
+}
+
+function BuildDeerVil(AoESim) {
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/deer.png');
+	if(ErrorOccurred === 0)
+	{
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToHunters);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToHunters, EventFunction: "RetaskVillager(AoESim,'Walkers','DeerHunters',1);", UserVisible: 0	});	// Not necessary for user to see this event
+	}
+}
+
+function BuildBerryVil(AoESim) {
+	var ErrorOccurred;
+	if(AoESim.CurState.Buildings.Mill[0] < 1 && AoESim.CurState.Resources[0] >= AoESim.Stats.Buildings.Mill.Cost[0])
+	{
+		ErrorOccurred = BuildUnit(AoESim,'Villager','IdleVils','./Pix/Berries.webp');	
+		if(ErrorOccurred === 0)
+		{		
+			var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToBerries);
+			AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStats("Villager").TrainTime, EventFunction: "BuildBuilding(AoESim,'Mill'," + AoESim.CurState.WalkTimes.TCToBerries + ",'IdleVils','','',1,0,0,'BerryPickers',2);", UserVisible: 0	});	
+		}
+	}
+	else
+	{
+		ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/Berries.webp');
+		
+	if(ErrorOccurred === 0)
+	{
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToBerries);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToBerries, EventFunction: "RetaskVillager(AoESim,'Walkers','BerryPickers',1);", UserVisible: 0	});	// Not necessary for user to see this event
+		}
+	}
+}
+
+function BuildWoodVil(AoESim) {
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/trees.jpeg');
+	if(ErrorOccurred === 0)
+	{
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToLumberjacks);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToLumberjacks, EventFunction: "RetaskVillager(AoESim,'Walkers','Lumberjacks',1);", UserVisible: 0	});	// Not necessary for user to see this event
+	}
+}
+
+function BuildFarmVil(AoESim) {
+
+	//BuildUnit("Villager")
+	//SendIdleVilToBoar()
+
+}
+
+function BuildGoldVil(AoESim) {
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/gold_miner.png');
+	if(ErrorOccurred === 0)
+	{
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToGoldMiners);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToGoldMiners, EventFunction: "RetaskVillager(AoESim,'Walkers','GoldMiners',1);", UserVisible: 0	});	// Not necessary for user to see this event
+	}
+}
+
+function BuildStoneVil(AoESim) {
+	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/stone_miner.png');
+	if(ErrorOccurred === 0)
+	{
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToStoneMiners);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToStoneMiners, EventFunction: "RetaskVillager(AoESim,'Walkers','StoneMiners',1);", UserVisible: 0	});	// Not necessary for user to see this event
+	}
+}
+
+/*
+function ResearchWheelbarrow() {
+
+	BuildUnit("Villager")
+	//SendIdleVilToBoar()
+
+}
+function ResearchHandcart() {
+
+	BuildUnit("Villager")
+	//SendIdleVilToBoar()
+
+}
+*/
+// Build, Research & Add Functions END
+
+
+
+
+
+// Retask Functions
+function RetaskVillager(AoESim,RetaskFrom,RetaskTo,NoOfVils) {
+	AoESim.CurState.Vils[RetaskFrom] = AoESim.CurState.Vils[RetaskFrom] - NoOfVils;
+	AoESim.CurState.Vils[RetaskTo] = AoESim.CurState.Vils[RetaskTo] + NoOfVils;
+	WriteOutVils(AoESim);
+	UpdateRetaskUI(AoESim);
+	UpdateBuilderUI(AoESim);
+}
+
+function RetaskVillagerByUser(AoESim) {
+
+	// Get Info from UI
+	var RetaskFrom = document.getElementById("sRetaskFrom").value;
+	var RetaskTo = document.getElementById("sRetaskTo").value;	
+	var RetaskNumber = parseFloat(document.getElementById("RetaskNumber").value);
+
+	// Check if we would get negative vil distribution. Don't retask in that case!
+	if(AoESim.CurState.Vils[RetaskFrom] - RetaskNumber < 0)
+	{
+		return 1;
+	}
+	
+	// In most cases, we need to first retask vil to walker, and add an event to change unit to demanded task. E.g. when retasking from Shepherds --> Lumberjacks, vil needs to walk first to wood!
+	// Only when tasking to Idles, Walkers, or StragglerLumberjacks we don't need walking (in the latter case, the low gather rate includes the walking already!)
+	if(RetaskTo === "Idles" || RetaskTo === "Walkers" || RetaskTo === "StragglerLumberjacks")
+	{
+		RetaskVillager(AoESim,RetaskFrom,RetaskTo,RetaskNumber);
+	}
+	else
+	{
+		var WalkTime = CalcWalkTime(RetaskFrom,RetaskTo);
+		RetaskVillager(AoESim,RetaskFrom,"Walkers",RetaskNumber);
+		var IndexOfEvent = DetermineEventIndex(AoESim,AoESim.CurState.Time + WalkTime);
+		AoESim.Events.splice(IndexOfEvent,0, {EventTime: AoESim.CurState.Time + WalkTime, EventFunction: "RetaskVillager(AoESim,'Walkers','" + RetaskTo + "'," + RetaskNumber + ");", UserVisible: 0	});				
+	}
+	
+	
+	// Maybe add some icon? Not implemented yet...
+	
+	
+}
+// Retask Functions END
+
+
+
+
+function UnitStats(UnitName) {
+	Stats = {
+		Cost: 0,
+		OccupyBuilding: "",		// Wood, Food, Gold, Stone
+		TrainTime: 0
+	};
+	if (UnitName === "Villager")
+	{
+		Stats.Cost = [0, 50, 0, 0];
+		Stats.OccupyBuilding = "TownCenter"
+		Stats.TrainTime = 25;
+	}
+	return Stats;
+}
+
+
+// Read in Excel File with Stats Infos (Costs of units, buildings, upgrades etc.
+var input_dom_element = document.getElementById('Statfile');
+var rABS = true; // true: readAsBinaryString ; false: readAsArrayBuffer
+function handleFile(e) {
+	var files = e.target.files, f = files[0];
+	var reader = new FileReader();
+	reader.onload = function(e) {
+		var data = e.target.result;
+		if(!rABS) data = new Uint8Array(data);
+		var workbook = XLSX.read(data, {type: rABS ? 'binary' : 'array'});
+
+
+		// Convert from array of arrays (e.g. ws[0] = [] -->
+		// AoESim.Stats.Buildings. = [];
+		// Buildings
+		var ws = workbook.Sheets[workbook.SheetNames[0]];
+		ws = XLSX.utils.sheet_to_json(ws, {header:1});
+		var dummy;
+		for (let ii = 1; ii < ws.length; ii++) {
+			if(ws[ii].length < 1)
+			{
+				break;
+			}
+			dummy = ws[ii][0].replace(/ /g, "");
+			AoESim.Stats.Buildings[dummy] = {};
+			AoESim.Stats.Buildings[dummy].Occupy = ws[ii][1];
+			AoESim.Stats.Buildings[dummy].AvailableAge = ws[ii][2];
+			AoESim.Stats.Buildings[dummy].Cost = ws[ii].slice(3,7);
+			AoESim.Stats.Buildings[dummy].CreateTime = ws[ii][7];
+			AoESim.Stats.Buildings[dummy].Prerequisites = ws[ii][8];
+			AoESim.Stats.Buildings[dummy].Effects = ws[ii][9];															
+		}
+		UpdateBuildingUI(AoESim);
+
+		
+		// Upgrades
+		ws = workbook.Sheets[workbook.SheetNames[1]];
+		ws = XLSX.utils.sheet_to_json(ws, {header:1});
+		for (let ii = 1; ii < ws.length; ii++) {
+			if(ws[ii].length < 1)
+			{
+				break;
+			}
+			dummy = ws[ii][0].replace(/ /g, "");
+			//AoESim.Stats.Upgrades[dummy] = ws[ii].slice(1,10);
+			AoESim.Stats.Upgrades[dummy] = {};
+			AoESim.Stats.Upgrades[dummy].Occupy = ws[ii][1];
+			AoESim.Stats.Upgrades[dummy].AvailableAge = ws[ii][2];
+			AoESim.Stats.Upgrades[dummy].Cost = ws[ii].slice(3,7);
+			AoESim.Stats.Upgrades[dummy].CreateTime = ws[ii][7];
+			AoESim.Stats.Upgrades[dummy].Prerequisites = ws[ii][8];
+			AoESim.Stats.Upgrades[dummy].Effects = ws[ii][9];
+		}
+		
+		// Units
+		ws = workbook.Sheets[workbook.SheetNames[2]];
+		ws = XLSX.utils.sheet_to_json(ws, {header:1});
+		for (let ii = 1; ii < ws.length; ii++) {
+			if(ws[ii].length < 1)
+			{
+				break;
+			}
+			dummy = ws[ii][0].replace(/ /g, "");
+			//AoESim.Stats.Units[dummy] = ws[ii].slice(1,10);
+			AoESim.Stats.Units[dummy] = {};
+			AoESim.Stats.Units[dummy].Occupy = ws[ii][1];
+			AoESim.Stats.Units[dummy].AvailableAge = ws[ii][2];
+			AoESim.Stats.Units[dummy].Cost = ws[ii].slice(3,7);
+			AoESim.Stats.Units[dummy].CreateTime = ws[ii][7];
+			AoESim.Stats.Units[dummy].Prerequisites = ws[ii][8];
+			AoESim.Stats.Units[dummy].Effects = ws[ii][9];
+		}
+	};
+	if(rABS) reader.readAsBinaryString(f); else reader.readAsArrayBuffer(f);
+}
+input_dom_element.addEventListener('change', handleFile, false);
+
+
+
+
+
+
+// Supporting functions & methods
+function addvector(a,b){
+    return a.map((e,i) => e + b[i]);
+}
+function subtractvector(a,b){
+    return a.map((e,i) => e - b[i]);
+}
+
+
+
+// attach the .ElementwiseEquals method to Array's prototype to call it on any array
+Array.prototype.ElementwiseEquals = function (array) {
+    // if the other array is a falsy value, return
+    if (!array)
+        return [0];
+
+    // compare lengths - can save a lot of time 
+    if (this.length != array.length)
+        return [0];
+	
+	var	Output = new Array(array.length) 
+    for (var ii = 0; ii < array.length; ii++) {
+		Output[ii] = this[ii] === array[ii];
+        }           
+    return Output;
+}
+// Hide method from for-in loops
+Object.defineProperty(Array.prototype, "ElementwiseEquals", {enumerable: false});
+
+// attach the .ElementwiseGreaterOrEqual method to Array's prototype to call it on any array
+Array.prototype.ElementwiseGreaterOrEqual = function (array) {
+    // if the other array is a falsy value, return
+    if (!array)
+        return [0];
+
+    // compare lengths - can save a lot of time 
+    if (this.length != array.length)
+        return [0];
+	
+	var	Output = new Array(array.length) 
+    for (var ii = 0; ii < array.length; ii++) {
+		Output[ii] = this[ii] >= array[ii];
+        }           
+    return Output;
+}
+// Hide method from for-in loops
+Object.defineProperty(Array.prototype, "ElementwiseGreaterOrEqual", {enumerable: false});
+
+
+// attach the .AllElementsGreaterOrEqual method to Array's prototype to call it on any array
+Array.prototype.AllElementsGreaterOrEqual = function (array) {
+    // if the other array is a falsy value, return
+    if (!array)
+        return false;
+
+    // compare lengths - can save a lot of time 
+    if (this.length != array.length)
+        return false;
+	
+	var	Output = true; 
+    for (var ii = 0; ii < array.length; ii++) {
+		if(this[ii] < array[ii])
+		{
+			Output = false;
+			return Output;
+		}
+    }           
+    return Output;
+}
+// Hide method from for-in loops
+Object.defineProperty(Array.prototype, "AllElementsGreaterOrEqual", {enumerable: false});
+// Supporting functions & methods END
+
+
+
+
+
+
+
+
+
+
+</script>
+
+
+
+
+</body>
+</html>

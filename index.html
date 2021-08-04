@@ -62,6 +62,14 @@
 <br>
 
 
+<!-- RESEARCH UPGRADE UI -->
+<label for="lResearchUpgrade">Research Upgrade?</label>
+<select name="sResearchUpgrade" id="sResearchUpgrade">
+</select>
+<button type="button" onclick="ResearchByUser(AoESim)">Research!</button>
+<br>
+
+
 
 <!-- VIL RETASK UI -->
 <label for="lRetaskVils">Retask Vils?</label>
@@ -245,7 +253,7 @@ function InitializeState()
 {
 	AoESim = {
 		CurState: {
-			CurAge: 1,		// 1 = Dark Age, 2 = Feudal Age, 3 = Castle Age, 4 = Imperial Age
+			Age: 1,		// 1 = Dark Age, 2 = Feudal Age, 3 = Castle Age, 4 = Imperial Age
 			Time: 0,
 			CurEventIndex: 0,
 			Resources: [200,200,100,200],		// Wood, Food, Gold, Stone
@@ -320,7 +328,9 @@ function InitializeState()
 				BombardTower: [0,0,0],
 				Feitoria: [0,0,0]
 			},
-				EventBar: {
+			Upgrades: {
+			},			
+			EventBar: {
 					TotLanes: 8,
 					LanesOccupied: 0,
 					CurPos: 0,
@@ -436,7 +446,6 @@ function UpdateBuildingUI(AoESim) {
 	while (select.firstChild) {
 		select.removeChild(select.firstChild);
 	}	
-	
 	// Add all currently available buildings
 	for (var propp in AoESim.Stats.Buildings) {
 		if(AoESim.CurState.Buildings[propp][2] > 0)
@@ -483,6 +492,32 @@ function UpdateBuilderUI(AoESim) {
 			opt3.value = propp;
 			opt3.innerHTML = propp;				
 			select3.appendChild(opt3);
+		}
+	}
+}
+function UpdateResearchUI(AoESim) {
+    select = document.getElementById('sResearchUpgrade');
+	
+	// Remove all building options
+	while (select.firstChild) {
+		select.removeChild(select.firstChild);
+	}	
+	
+	var ResearchAvailable = true;
+	// Add all currently available buildings
+	for (var propp in AoESim.Stats.Upgrades) {
+		ResearchAvailable = AoESim.CurState.Upgrades[propp][1] < 1;																	// Haven't researched upgrade yet
+		ResearchAvailable = ResearchAvailable && AoESim.CurState.Buildings[  AoESim.Stats.Upgrades[propp].Occupy  ][0] > 0;			// Have building to research upgrade
+		ResearchAvailable = ResearchAvailable && (AoESim.Stats.Upgrades[propp].AvailableAge <= AoESim.CurState.Age);				// Have age to research upgrade
+		if(AoESim.Stats.Upgrades[propp].Prerequisites != ""){
+			ResearchAvailable = ResearchAvailable && (AoESim.CurState.Upgrades[AoESim.Stats.Upgrades[propp].Prerequisites][0] > 0);	// have previous researches
+		}
+		if(ResearchAvailable)
+		{
+			var opt = document.createElement('option');
+			opt.value = propp;
+			opt.innerHTML = AoESim.Stats.Upgrades[propp].Occupy + ":" + propp;
+			select.appendChild(opt);
 		}
 	}
 }
@@ -786,7 +821,7 @@ function AddBuilding(AoESim,BuildingName,TotBuilders,EventLane,TaskWhenFinished,
 	// Does the building enable another building? If so, enable the new building!
 	var NeedBuildingsUpdate = 0;
 	for (var propp in AoESim.Stats.Buildings) {
-		if(AoESim.Stats.Buildings[propp].Prerequisites === BuildingName && AoESim.CurState.Buildings[propp][2] === 0 && AoESim.CurState.CurAge >= AoESim.Stats.Buildings[propp].AvailableAge)
+		if(AoESim.Stats.Buildings[propp].Prerequisites === BuildingName && AoESim.CurState.Buildings[propp][2] === 0 && AoESim.CurState.Age >= AoESim.Stats.Buildings[propp].AvailableAge)
 		{
 			AoESim.CurState.Buildings[propp][2] = 1;
 			NeedBuildingsUpdate = 1;
@@ -796,6 +831,13 @@ function AddBuilding(AoESim,BuildingName,TotBuilders,EventLane,TaskWhenFinished,
 	{
 		UpdateBuildingUI(AoESim);
 	}
+	
+	
+	// Does the building enable a new research? Only check this for the first building of its kind
+	if(AoESim.CurState.Buildings[BuildingName][0] === 1){
+		UpdateResearchUI(AoESim);
+	}
+
 	
 	// Apply Effect of Building
 	if(AoESim.Stats.Buildings[BuildingName].Effects != " ")
@@ -898,20 +940,50 @@ function BuildStoneVil(AoESim) {
 	}
 }
 
-/*
-function ResearchWheelbarrow() {
 
-	BuildUnit("Villager")
-	//SendIdleVilToBoar()
+function ResearchByUser(AoESim) {
+	
+	
+	var UpgradeName = document.getElementById("sResearchUpgrade").value;
+	var UpgradeStatsTmp = AoESim.Stats.Upgrades[UpgradeName];
+	
+	
+	// Return error if we cannot afford upgrade. Don't research it in that case!
+	if(!AoESim.CurState.Resources.AllElementsGreaterOrEqual(UpgradeStatsTmp.Cost))
+	{
+		return 1;
+	}
+	// Further check if Occupy is free
+	if(AoESim.CurState.Buildings[UpgradeStatsTmp.Occupy][1] < 1)
+	{
+		return 1;
+	}
+
+	// Otherwise: Research upgrade!
+	
+	
+	// Pay for upgrade
+	AoESim.CurState.Resources = subtractvector(AoESim.CurState.Resources, UpgradeStatsTmp.Cost);
+	
+	// Mark upgrade as being currently researched
+	AoESim.CurState.Upgrades[UpgradeName][1] = 1;	
+	
+	// Occupy building
+	AoESim.CurState.Buildings[UpgradeStatsTmp.Occupy][1]--;
+	
+	// Plot to lane
+	var EventLane = AddImageToEventBar(AoESim,"./Pix/Loom.webp",UpgradeStatsTmp.CreateTime);
+	
+	// Add event for releasing event bar & releasing building & mark upgrade as having been researched & Applying effect of research
+	// REMARK: Don't actually apply research yet. Will need to change excel file to have effects that evaluate to accurate JavaScript functions.
+	AddEvent(AoESim,UpgradeStatsTmp.CreateTime,"ReleaseEventBarLane(AoESim," + EventLane + "); AoESim.CurState.Buildings['" + UpgradeStatsTmp.Occupy + "' ][1]++; AoESim.CurState.Upgrades['" + UpgradeName + "'][0] = 1; UpdateResearchUI(AoESim);", 1);	
+	
+	// Update UI
+	WriteOutResources(AoESim);
 
 }
-function ResearchHandcart() {
 
-	BuildUnit("Villager")
-	//SendIdleVilToBoar()
 
-}
-*/
 // Build, Research & Add Functions END
 
 
@@ -996,19 +1068,21 @@ function handleFile(e) {
 		// Buildings
 		var ws = workbook.Sheets[workbook.SheetNames[0]];
 		ws = XLSX.utils.sheet_to_json(ws, {header:1});
-		var dummy;
+		var dummy; var PreReq; var Occup;
 		for (let ii = 1; ii < ws.length; ii++) {
 			if(ws[ii].length < 1)
 			{
 				break;
 			}
-			dummy = ws[ii][0].replace(/ /g, "");
+			dummy = ws[ii][0].replace(/ |-/g, "");						// Remove all spaces and "-" signs (e.g. Lumber Camp --> LumberCamp, Man-at-arms --> Manatarms).
+			PreReq = ws[ii][8].replace(/ |-/g, "");	
+			Occup = ws[ii][1].replace(/ |-/g, "");								
 			AoESim.Stats.Buildings[dummy] = {};
-			AoESim.Stats.Buildings[dummy].Occupy = ws[ii][1];
+			AoESim.Stats.Buildings[dummy].Occupy = Occup;
 			AoESim.Stats.Buildings[dummy].AvailableAge = ws[ii][2];
 			AoESim.Stats.Buildings[dummy].Cost = ws[ii].slice(3,7);
 			AoESim.Stats.Buildings[dummy].CreateTime = ws[ii][7];
-			AoESim.Stats.Buildings[dummy].Prerequisites = ws[ii][8];
+			AoESim.Stats.Buildings[dummy].Prerequisites = PreReq;
 			AoESim.Stats.Buildings[dummy].Effects = ws[ii][9];															
 		}
 		UpdateBuildingUI(AoESim);
@@ -1022,16 +1096,23 @@ function handleFile(e) {
 			{
 				break;
 			}
-			dummy = ws[ii][0].replace(/ /g, "");
+			dummy = ws[ii][0].replace(/ |-/g, "");
+			PreReq = ws[ii][8].replace(/ |-/g, "");	
+			Occup = ws[ii][1].replace(/ |-/g, "");								
 			//AoESim.Stats.Upgrades[dummy] = ws[ii].slice(1,10);
 			AoESim.Stats.Upgrades[dummy] = {};
-			AoESim.Stats.Upgrades[dummy].Occupy = ws[ii][1];
+			AoESim.Stats.Upgrades[dummy].Occupy = Occup;
 			AoESim.Stats.Upgrades[dummy].AvailableAge = ws[ii][2];
 			AoESim.Stats.Upgrades[dummy].Cost = ws[ii].slice(3,7);
 			AoESim.Stats.Upgrades[dummy].CreateTime = ws[ii][7];
-			AoESim.Stats.Upgrades[dummy].Prerequisites = ws[ii][8];
+			AoESim.Stats.Upgrades[dummy].Prerequisites = PreReq;
 			AoESim.Stats.Upgrades[dummy].Effects = ws[ii][9];
+			
+			// Initialize CurState.Upgrades property
+			AoESim.CurState.Upgrades[dummy] = [0,0];
 		}
+		UpdateResearchUI(AoESim);
+		
 		
 		// Units
 		ws = workbook.Sheets[workbook.SheetNames[2]];
@@ -1041,14 +1122,16 @@ function handleFile(e) {
 			{
 				break;
 			}
-			dummy = ws[ii][0].replace(/ /g, "");
+			dummy = ws[ii][0].replace(/ |-/g, "");
+			PreReq = ws[ii][8].replace(/ |-/g, "");
+			Occup = ws[ii][1].replace(/ |-/g, "");						
 			//AoESim.Stats.Units[dummy] = ws[ii].slice(1,10);
 			AoESim.Stats.Units[dummy] = {};
-			AoESim.Stats.Units[dummy].Occupy = ws[ii][1];
+			AoESim.Stats.Units[dummy].Occupy = Occup;
 			AoESim.Stats.Units[dummy].AvailableAge = ws[ii][2];
 			AoESim.Stats.Units[dummy].Cost = ws[ii].slice(3,7);
 			AoESim.Stats.Units[dummy].CreateTime = ws[ii][7];
-			AoESim.Stats.Units[dummy].Prerequisites = ws[ii][8];
+			AoESim.Stats.Units[dummy].Prerequisites = PreReq;
 			AoESim.Stats.Units[dummy].Effects = ws[ii][9];
 		}
 	};

@@ -299,34 +299,34 @@ function InitializeState()
 				TCToStoneMiners: 20,
 				Generic: 10
 			},
-			Buildings: { // First index: How many buildins exist or are started to be built, Second: Number of idle buildings (farms & fishtrap: unoccupied farms/traps). Third: Is building currently available?
-				TownCenter: [1,1,0],
-				House: [0,0,1],
-				Mill: [0,0,1],
-				Farm: [0,0,0],
-				LumberCamp: [0,0,1],
-				MiningCamp: [0,0,1],
-				Dock: [0,0,1],
-				Barracks: [0,0,1],
-				Palisadex4: [0,0,1],
-				PalisadeGate: [0,0,1],
-				Outpost: [0,0,1],
-				Market: [0,0,0],
-				Blacksmith: [0,0,0],
-				FishTrap: [0,0,0],
-				ArcheryRange: [0,0,0],
-				Stable: [0,0,0],
-				StoneWallx2: [0,0,0],
-				Gate: [0,0,0],
-				WatchTower: [0,0,0],
-				Donjon: [0,0,0],
-				Monastery: [0,0,0],
-				University: [0,0,0],
-				SiegeWorkshop: [0,0,0],
-				Castle: [0,0,0],
-				Krepost: [0,0,0],
-				BombardTower: [0,0,0],
-				Feitoria: [0,0,0]
+			Buildings: { // First index: How many buildins exist, Second: Number of idle buildings (farms & fishtrap: unoccupied farms/traps). Third: How many buildings have been tasked to be built. Fourth: Is building currently available?
+				TownCenter: [1,1,1,0],
+				House: [0,0,0,1],
+				Mill: [0,0,0,1],
+				Farm: [0,0,0,0],
+				LumberCamp: [0,0,0,1],
+				MiningCamp: [0,0,0,1],
+				Dock: [0,0,0,1],
+				Barracks: [0,0,0,1],
+				Palisadex4: [0,0,0,1],
+				PalisadeGate: [0,0,0,1],
+				Outpost: [0,0,0,1],
+				Market: [0,0,0,0],
+				Blacksmith: [0,0,0,0],
+				FishTrap: [0,0,0,0],
+				ArcheryRange: [0,0,0,0],
+				Stable: [0,0,0,0],
+				StoneWallx2: [0,0,0,0],
+				Gate: [0,0,0,0],
+				WatchTower: [0,0,0,0],
+				Donjon: [0,0,0,0],
+				Monastery: [0,0,0,0],
+				University: [0,0,0,0],
+				SiegeWorkshop: [0,0,0,0],
+				Castle: [0,0,0,0],
+				Krepost: [0,0,0,0],
+				BombardTower: [0,0,0,0],
+				Feitoria: [0,0,0,0]
 			},
 			Upgrades: {
 			},			
@@ -448,7 +448,7 @@ function UpdateBuildingUI(AoESim) {
 	}	
 	// Add all currently available buildings
 	for (var propp in AoESim.Stats.Buildings) {
-		if(AoESim.CurState.Buildings[propp][2] > 0)
+		if(AoESim.CurState.Buildings[propp][3] > 0)
 		{
 			var opt = document.createElement('option');
 			opt.value = propp;
@@ -456,6 +456,7 @@ function UpdateBuildingUI(AoESim) {
 			select.appendChild(opt);
 		}
 	}
+	select.value = "House";
 }
 function UpdateBuilderUI(AoESim) {
 	// Show only options to use villagers as builders that are available
@@ -671,18 +672,15 @@ function AddEvent(AoESim,EventTimeFromNow,EventFunctionIn,UserVisibleIn){
 
 // Build, Research & Add Functions
 function BuildUnit(AoESim,UnitName,UnitTask,EventBarIcon) {
-	// BUG REMINDERS:
-	// NEED SUFFICIENT POP TO BUILD UNIT!
-	// ALSO NEED TO ADD POP WHEN STARTING TO BUILD UNIT, NOT WHEN IT'S FINISHED (so here in BuildUnit, not in AddUnit as it is now!).
-	
 
 	UnitStatsTmp = UnitStats(UnitName);
 	
 	// Only build unit if we have a building idle to build that unit
-	if(AoESim.CurState.Buildings[UnitStatsTmp.OccupyBuilding][1] > 0 && AoESim.CurState.Resources.AllElementsGreaterOrEqual(UnitStatsTmp.Cost))
+	if(AoESim.CurState.Buildings[UnitStatsTmp.OccupyBuilding][1] > 0 && AoESim.CurState.Resources.AllElementsGreaterOrEqual(UnitStatsTmp.Cost) && AoESim.CurState.MaxPop - AoESim.CurState.Pop > 0)
 	{
 		AoESim.CurState.Resources = subtractvector(AoESim.CurState.Resources, UnitStatsTmp.Cost);
 		AoESim.CurState.Buildings[UnitStatsTmp.OccupyBuilding][1] = AoESim.CurState.Buildings[UnitStatsTmp.OccupyBuilding][1] - 1;
+		AoESim.CurState.Pop++;		// Need pop when creating unit, not when unit is created.
 		WriteOutResources(AoESim);
 
 		// Plot Unit to EventBar
@@ -706,7 +704,6 @@ function AddUnit(AoESim,UnitName,UnitTask,EventLane) {
 	if(UnitName === "Villager")
 	{
 		AoESim.CurState.TotalVils = AoESim.CurState.TotalVils + 1;
-		AoESim.CurState.Pop = AoESim.CurState.Pop + 1;
 		AoESim.CurState.Vils[UnitTask] = AoESim.CurState.Vils[UnitTask] + 1;
 		WriteOutVils(AoESim);
 		UpdateRetaskUI(AoESim);
@@ -762,6 +759,16 @@ function BuildBuildingByUser(AoESim) {
 
 function BuildBuilding(AoESim,BuildingName,WalkTime,Builders1,Builders2,Builders3,Builders1No,Builders2No,Builders3No,TaskWhenFinished,WalktimeWhenFinished) {
 
+	// Default values
+	if(typeof(TaskWhenFinished) === "undefined" || TaskWhenFinished === "undefined")
+	{
+		TaskWhenFinished = "IdleBuilders";
+	}
+	if(typeof(WalktimeWhenFinished) === "undefined" || WalktimeWhenFinished === "undefined")
+	{
+		WalktimeWhenFinished = 0;
+	}
+
 	var BuildingStatsTmp = AoESim.Stats.Buildings[BuildingName];
 
 	var TotBuilders = Builders1No+Builders2No+Builders3No;
@@ -773,7 +780,7 @@ function BuildBuilding(AoESim,BuildingName,WalkTime,Builders1,Builders2,Builders
 	WriteOutVils(AoESim);	
 
 	// Add building to existing or to be constructed buildings. Need to do that here, otherwise, when clicking at berry-vil several times, and no mill exists, several mills might be built!
-	AoESim.CurState.Buildings[BuildingName][0] = AoESim.CurState.Buildings[BuildingName][0] + 1;
+	AoESim.CurState.Buildings[BuildingName][2] = AoESim.CurState.Buildings[BuildingName][2] + 1;
 
 	// Calc timings
 	
@@ -798,8 +805,11 @@ function BuildBuilding(AoESim,BuildingName,WalkTime,Builders1,Builders2,Builders
 	// 1) Retask vils from walkers --> builders 
 	AddEvent(AoESim,WalkTime,"RetaskVillager(AoESim,'Walkers','Builders'," + TotBuilders + ");", 0);
 	
-	// 2) Add building
-	AddEvent(AoESim,WalkTime + BuildTime,"AddBuilding(AoESim, '" + BuildingName + "', " + TotBuilders + ", " + EventLane + ",'" + TaskWhenFinished + "'," + WalktimeWhenFinished + ");", 1);
+	// 2) Add building. Only make AddBuilding event visible if builder goes idle afterwards.
+	var EventVisible;
+	if(TaskWhenFinished === "Idles" || TaskWhenFinished === "IdleBuilders") {EventVisible = 1;}
+	else {EventVisible = 0;}
+	AddEvent(AoESim,WalkTime + BuildTime,"AddBuilding(AoESim, '" + BuildingName + "', " + TotBuilders + ", " + EventLane + ",'" + TaskWhenFinished + "'," + WalktimeWhenFinished + ");", EventVisible);
 
 }
 
@@ -815,15 +825,16 @@ function AddBuilding(AoESim,BuildingName,TotBuilders,EventLane,TaskWhenFinished,
 		WalktimeWhenFinished = 0;
 	}
 
-	// Add Building
+	// Add Building & set to idle
+	AoESim.CurState.Buildings[BuildingName][0] = AoESim.CurState.Buildings[BuildingName][0] + 1;
 	AoESim.CurState.Buildings[BuildingName][1] = AoESim.CurState.Buildings[BuildingName][1] + 1;
 	
 	// Does the building enable another building? If so, enable the new building!
 	var NeedBuildingsUpdate = 0;
 	for (var propp in AoESim.Stats.Buildings) {
-		if(AoESim.Stats.Buildings[propp].Prerequisites === BuildingName && AoESim.CurState.Buildings[propp][2] === 0 && AoESim.CurState.Age >= AoESim.Stats.Buildings[propp].AvailableAge)
+		if(AoESim.Stats.Buildings[propp].Prerequisites === BuildingName && AoESim.CurState.Buildings[propp][3] === 0 && AoESim.CurState.Age >= AoESim.Stats.Buildings[propp].AvailableAge)
 		{
-			AoESim.CurState.Buildings[propp][2] = 1;
+			AoESim.CurState.Buildings[propp][3] = 1;
 			NeedBuildingsUpdate = 1;
 		}
 	}
@@ -890,12 +901,13 @@ function BuildDeerVil(AoESim) {
 
 function BuildBerryVil(AoESim) {
 	var ErrorOccurred;
-	if(AoESim.CurState.Buildings.Mill[0] < 1 && AoESim.CurState.Resources[0] >= AoESim.Stats.Buildings.Mill.Cost[0])
+	if(AoESim.CurState.Buildings.Mill[2] < 1 && AoESim.CurState.Resources[0] >= AoESim.Stats.Buildings.Mill.Cost[0])
 	{
-		ErrorOccurred = BuildUnit(AoESim,'Villager','IdleVils','./Pix/Berries.webp');	
+		ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/Berries.webp');	
 		if(ErrorOccurred === 0)
-		{		
-			AddEvent(AoESim,UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToBerries,"BuildBuilding(AoESim,'Mill'," + AoESim.CurState.WalkTimes.TCToBerries + ",'IdleVils','','',1,0,0,'BerryPickers',2);", 0);			
+		{	
+			AoESim.CurState.Buildings.Mill[2] = 1;		// Mark mill as being about to be built (not started yet, though) so that no other mill is being built.
+			AddEvent(AoESim,UnitStats("Villager").TrainTime,"BuildBuilding(AoESim,'Mill'," + AoESim.CurState.WalkTimes.TCToBerries + ",'Walkers','','',1,0,0,'BerryPickers',2);", 0);			
 		}
 	}
 	else

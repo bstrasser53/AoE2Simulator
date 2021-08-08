@@ -37,7 +37,7 @@
 <br>
 
 <!-- BUILD BUILDING UI -->
-<label for="lBuildBuilding">Build Building?</label>
+<label for="lBuildBuilding">Build?</label>
 <select name="sBuildBuilding" id="sBuildBuilding">
 </select>
 
@@ -58,6 +58,13 @@
 </select>
 <label for="lBuilders3Number">Amount:</label>
 <input type="number" value="0" id="lBuilders3Number" name="lBuilders3Number" required minlength="1" maxlength="2" size="1">
+
+<label for="lTaskWhenFinished">WhenFinished: Task:</label>
+<select name="sTaskWhenFinished" id="sTaskWhenFinished">
+</select>
+<label for="lWalktimeWhenFinished">Walktime:</label>
+<input type="number" value="0" id="WalktimeWhenFinished" name="WalktimeWhenFinished" required minlength="1" maxlength="2" size="1">
+
 <button type="button" onclick="BuildBuildingByUser(AoESim)">Build!</button>
 <br>
 
@@ -225,8 +232,6 @@
 
 <br>
 <br>
-<br>
-<br>
 
 <p id="Output0"></p>
 <p id="Output1"></p>
@@ -361,6 +366,7 @@ function InitializeState()
 	WriteOutVils(AoESim);
 	UpdateBuilderUI(AoESim);
 	InitRetaskUI(AoESim);
+	InitBuilderUI(AoESim);
 	UpdateRetaskUI(AoESim);
 }
 
@@ -458,6 +464,19 @@ function UpdateBuildingUI(AoESim) {
 	}
 	select.value = "House";
 }
+
+function InitBuilderUI(AoESim) {
+    select1 = document.getElementById('sTaskWhenFinished');
+    	
+	// Add new options
+	for (var propp in AoESim.CurState.Vils) {
+		var opt1 = document.createElement('option');
+		opt1.value = propp;
+		opt1.innerHTML = propp;
+		select1.appendChild(opt1);
+	}
+	select1.value = "IdleBuilders";
+}
 function UpdateBuilderUI(AoESim) {
 	// Show only options to use villagers as builders that are available
     select1 = document.getElementById('sBuilders1');
@@ -477,8 +496,8 @@ function UpdateBuilderUI(AoESim) {
 	
 	// Add new options
 	for (var propp in AoESim.CurState.Vils) {
-		if(AoESim.CurState.Vils[propp] > 0)
-		{
+		if(AoESim.CurState.Vils[propp] > 0 && propp != "Walkers" && propp != "Builders")	// Walkers and builders shouldnt be allowed to build - they have already their assigned task.
+		{																					// Currently, it's not allowed to switch their task before they finish it.
 			var opt1 = document.createElement('option');
 			opt1.value = propp;
 			opt1.innerHTML = propp;
@@ -724,6 +743,10 @@ function BuildBuildingByUser(AoESim) {
 
 	var BuildingName = document.getElementById("sBuildBuilding").value;
 	var BuildingStatsTmp = AoESim.Stats.Buildings[BuildingName];
+	var TaskWhenFinished = document.getElementById("sTaskWhenFinished").value;
+	var WalktimeWhenFinished = document.getElementById("WalktimeWhenFinished").value;
+
+	
 	
 	// Return error if we cannot afford building. Don't build it in that case!
 	if(!AoESim.CurState.Resources.AllElementsGreaterOrEqual(BuildingStatsTmp.Cost))
@@ -754,7 +777,7 @@ function BuildBuildingByUser(AoESim) {
 	}
 
 	// Otherwise: Build building!
-	BuildBuilding(AoESim,BuildingName,"",Builders1,Builders2,Builders3,Builders1No,Builders2No,Builders3No);
+	BuildBuilding(AoESim,BuildingName,"",Builders1,Builders2,Builders3,Builders1No,Builders2No,Builders3No,TaskWhenFinished,WalktimeWhenFinished);
 }
 
 function BuildBuilding(AoESim,BuildingName,WalkTime,Builders1,Builders2,Builders3,Builders1No,Builders2No,Builders3No,TaskWhenFinished,WalktimeWhenFinished) {
@@ -906,26 +929,37 @@ function BuildBerryVil(AoESim) {
 		ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/Berries.webp');	
 		if(ErrorOccurred === 0)
 		{	
-			AoESim.CurState.Buildings.Mill[2] = 1;		// Mark mill as being about to be built (not started yet, though) so that no other mill is being built.
 			AddEvent(AoESim,UnitStats("Villager").TrainTime,"BuildBuilding(AoESim,'Mill'," + AoESim.CurState.WalkTimes.TCToBerries + ",'Walkers','','',1,0,0,'BerryPickers',2);", 0);			
 		}
 	}
 	else
 	{
 		ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/Berries.webp');
-		
-	if(ErrorOccurred === 0)
-	{
-		AddEvent(AoESim,UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToBerries,"RetaskVillager(AoESim,'Walkers','BerryPickers',1);", 0);
-	}
+		if(ErrorOccurred === 0)
+		{
+			AddEvent(AoESim,UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToBerries,"RetaskVillager(AoESim,'Walkers','BerryPickers',1);", 0);
+		}
 	}
 }
 
 function BuildWoodVil(AoESim) {
-	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/trees.jpeg');
-	if(ErrorOccurred === 0)
+
+	var ErrorOccurred;
+	if(AoESim.CurState.Buildings.LumberCamp[2] < 1 && AoESim.CurState.Resources[0] >= AoESim.Stats.Buildings.LumberCamp.Cost[0])
 	{
-		AddEvent(AoESim,UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToLumberjacks,"RetaskVillager(AoESim,'Walkers','Lumberjacks',1);", 0);
+		ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/trees.jpeg');	
+		if(ErrorOccurred === 0)
+		{	
+			AddEvent(AoESim,UnitStats("Villager").TrainTime,"BuildBuilding(AoESim,'LumberCamp'," + AoESim.CurState.WalkTimes.TCToLumberjacks + ",'Walkers','','',1,0,0,'Lumberjacks',2);", 0);			
+		}
+	}
+	else
+	{
+		ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/trees.jpeg');
+		if(ErrorOccurred === 0)
+		{
+			AddEvent(AoESim,UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToLumberjacks,"RetaskVillager(AoESim,'Walkers','Lumberjacks',1);", 0);
+		}
 	}
 }
 
@@ -937,18 +971,43 @@ function BuildFarmVil(AoESim) {
 }
 
 function BuildGoldVil(AoESim) {
-	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/gold_miner.png');
-	if(ErrorOccurred === 0)
+	var ErrorOccurred;
+	if(AoESim.CurState.Buildings.MiningCamp[2] < 1 && AoESim.CurState.Resources[0] >= AoESim.Stats.Buildings.MiningCamp.Cost[0])
 	{
-		AddEvent(AoESim,UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToGoldMiners,"RetaskVillager(AoESim,'Walkers','GoldMiners',1);", 0);
+		ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/gold_miner.png');	
+		if(ErrorOccurred === 0)
+		{	
+			AddEvent(AoESim,UnitStats("Villager").TrainTime,"BuildBuilding(AoESim,'MiningCamp'," + AoESim.CurState.WalkTimes.TCToGoldMiners + ",'Walkers','','',1,0,0,'GoldMiners',2);", 0);			
+		}
+	}
+	else
+	{
+		ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/gold_miner.png');
+		if(ErrorOccurred === 0)
+		{
+			AddEvent(AoESim,UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToGoldMiners,"RetaskVillager(AoESim,'Walkers','GoldMiners',1);", 0);
+		}
 	}
 }
 
 function BuildStoneVil(AoESim) {
-	var ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/stone_miner.png');
-	if(ErrorOccurred === 0)
+
+	var ErrorOccurred;
+	if(AoESim.CurState.Buildings.MiningCamp[2] < 1 && AoESim.CurState.Resources[0] >= AoESim.Stats.Buildings.MiningCamp.Cost[0])
 	{
-		AddEvent(AoESim,UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToStoneMiners,"RetaskVillager(AoESim,'Walkers','StoneMiners',1);", 0);
+		ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/stone_miner.png');	
+		if(ErrorOccurred === 0)
+		{	
+			AddEvent(AoESim,UnitStats("Villager").TrainTime,"BuildBuilding(AoESim,'MiningCamp'," + AoESim.CurState.WalkTimes.TCToStoneMiners + ",'Walkers','','',1,0,0,'StoneMiners',2);", 0);			
+		}
+	}
+	else
+	{
+		ErrorOccurred = BuildUnit(AoESim,'Villager','Walkers','./Pix/stone_miner.png');
+		if(ErrorOccurred === 0)
+		{
+			AddEvent(AoESim,UnitStats("Villager").TrainTime + AoESim.CurState.WalkTimes.TCToStoneMiners,"RetaskVillager(AoESim,'Walkers','StoneMiners',1);", 0);
+		}
 	}
 }
 
